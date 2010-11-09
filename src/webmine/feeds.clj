@@ -107,7 +107,7 @@
 				 (filter second
 					 (item-node-to-entry n)))]]
 	   entry))))
-    (catch Exception e e (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
+    (catch Exception _  (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
 			     nil))))
 
 (defn entries
