@@ -115,10 +115,11 @@
    For best performance, consider calling strip-bad-divs
    on dom before passing in here."
   [root]
-  (apply max-key div-content-score 
-    (filter
-       (fn [d] (>= (-> d .getTextContent count) 140))
-       (parser/divs root))))
+  (when-let [divs (parser/divs root)]
+    (apply max-key div-content-score 
+	   (filter
+	    (fn [d] (>= (-> d .getTextContent count) 140))
+	    divs))))
        
 (defn strip-bad-divs! 
   "before finding-best-content-div use this to remove
