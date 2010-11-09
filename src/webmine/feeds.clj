@@ -107,7 +107,9 @@
 				 (filter second
 					 (item-node-to-entry n)))]]
 	   entry))))
-    (catch Exception e (.printStackTrace e) nil)))
+    (catch Exception e e (do (println (format "ERROR: Couldn't parse %s, returning nil and showing stacktrace" source))
+			     (.printStackTrace e)
+			     nil))))
 
 (defn entries
   "return seq of entries from rss feed source (must be File or URL).
