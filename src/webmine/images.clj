@@ -1,12 +1,10 @@
 (ns webmine.images
-  (:import java.awt.Toolkit)
-  (:import javax.imageio.ImageIO)
   (:require [clj-http.client :as cl])
-  (:use
-   infer.core
-   webmine.urls
-   webmine.readability
-   webmine.parser))
+  (:use infer.core
+        webmine.urls
+        webmine.readability
+        webmine.parser)
+  (:import javax.imageio.ImageIO))
 
 ;;http://www.mkyong.com/regular-expressions/10-java-regular-expression-examples-you-should-know/
 ;; (defn imgs [t]
