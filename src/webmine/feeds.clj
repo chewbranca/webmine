@@ -125,7 +125,7 @@
 (defn feed? [item]
   (and item
        (let [feed (parse-feed item)]
-	 (:entries feed))))
+	 (-> feed :entries empty? not))))
 
 (defn links-from-entry [e]
  (-> e :content url-seq))
