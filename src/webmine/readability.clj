@@ -153,10 +153,14 @@
       strip-bad-divs!
       find-best-content-div))
 
-(defn extract-content [raw-html]
+(defn- strip-tags [d tags]
+  (apply d tags))
+
+(defn extract-content [raw-html & tags-to-exclude]
   (-> raw-html
       parser/dom
       parser/strip-non-content
+      (parser/strip-tags tags-to-exclude)
       strip-bad-divs!
       find-best-content-div
       .getTextContent))    
