@@ -126,9 +126,11 @@
   (best-img u (:body (cl/get u))))
 
 (defn with-best-img [m url-key content-key]
-  (assoc m :img
-    (best-img (url-key m)
-	       (content-key m))))
+  (let [img (try
+	         (best-img (url-key m)
+	       (content-key m))
+		 (catch java.lang.Exception _ nil))]
+  (assoc m :img img)))
 
 ;;gets a crane:
 ;;http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html

@@ -8,6 +8,7 @@
         [clojure.java.io :only [input-stream]])
   (:require [work.core :as work]
             [clojure.zip :as zip]
+            [webmine.images :as imgs]
             [clojure.contrib.logging :as log]
             [clojure.contrib.zip-filter :as zip-filter]
             [clojure.contrib.zip-filter.xml :as xml-zip]
@@ -52,9 +53,6 @@
 	     (first (elements (dom (:content entry)) "p")))]
       (assoc entry :des d))))
 
-(defn- str-to-url [s]
-  (if (string? s) (java.net.URL. s) s))
-
 (defrecord Feed [title des link entries])
 
 (defrecord FeedEntry [title link content des date author])
@@ -92,7 +90,7 @@
   :link link to feed
   :entries seq of Entry records, see doc below for entries"
   (try
-    (when-let [root (-> source str-to-url input-stream parse zip/xml-zip)]
+    (when-let [root (-> source parse zip/xml-zip)]
       (Feed.
          ; title
          (xml-zip/xml1-> root :channel :title xml-zip/text)
@@ -110,8 +108,14 @@
     (catch Exception _  (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
 			     nil))))
 
-(defn entries
-  "return seq of entries from rss feed source (must be File or URL).
+(defn with-images [es]
+  (map #(imgs/with-best-img % :link :content) 
+       es))
+
+(defn entries [source]
+  "
+  takes a string or inputstream
+  return seq of entries from rss feed source.
   Each entry is a map with string values
   :title entry title
   :des  descritpion
@@ -119,8 +123,27 @@
   :author author string
   :content Content of entry (or :description if not content)
   :link Link to content. "
-  [source]
-  (-> source parse-feed  :entries))
+  (try
+    (log/info (format "Fetching entries from %s" source))
+    (let [res (->  source
+		   parse-feed
+		   :entries
+		   with-images)]
+      (log/info (format "Got %d entries from %s" (count res) source))
+      ;;turn records into maps
+      (map (partial into {}) res))
+    (catch Exception e
+      (log/info (format "Error processing source %s" source))
+      (.printStackTrace e)
+      nil)))
+
+(defn fetch-entries [u]
+  (-> u url input-stream entries))
+
+(defn extract-entries [body]
+  (-> body (.getBytes "UTF-8")
+	       input-stream
+	       entries))
 
 (defn feed? [item]
   (and item
@@ -138,7 +161,6 @@
 		       (let [v (entry k)]
 			 [k (.setValue (SyndContentImpl.) v)]))
 		     content-keys)]
-
   (doto (SyndEntryImpl.)
     (.setTitle (:title entry))
     (.setLink (:link entry))
@@ -277,14 +299,14 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
     (seq ex-feeds)))
 
 (defn home-feed-outlinks
-[u]
+  [u]
   (find-feed-outlinks (body-str u) u))
 
 (defn entry-feed-outlinks
   "given the url of a blog's feed, find the outlinks to feeds from all the entries currently in this blog's feed."
   [u]
   (let [home (feed-home (url u))
-	uber-b (apply str (entries (url u)))]
+	uber-b (apply str (fetch-entries u))]
     (find-feed-outlinks uber-b u)))
 
 (defn feed-outlinks
@@ -300,15 +322,14 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
   (into #{} (concat (second (:entries outlinks-map))
 		    (second (:homepage outlinks-map)))))
 
-
 (comment
-  (entries "http://www.rollingstone.com/siteServices/rss/allNews")
-  (entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
+  (fetch-entries "http://www.rollingstone.com/siteServices/rss/allNews")
+  (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
   (canonical-feed "http://www.rollingstone.com/")
   (canonical-feed "http://techcrunch.com/2010/11/02/andreessen-horowitz-650m-fund/")
   ; This one requires fix-link, otherwise doesn't work
   (canonical-feed "http://npr.org")
-  (entries "http://www.nytimes.com/services/xml/rss/nyt/HomePage.xml")
+  (fetch-entries "http://www.nytimes.com/services/xml/rss/nyt/HomePage.xml")
   (canonical-feed "http://io9.com/")
   (canonical-feed "http://www.huffingtonpost.com/")
 )
