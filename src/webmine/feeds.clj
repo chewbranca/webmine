@@ -193,10 +193,11 @@
 ;;also could invert conditional to be only .xml, /, or nothing
 (defn rss-suffix? [u]
   (let [u (str u)]
-    (or (.contains u "xml")
-	(.contains u "rss")
-	(.contains u "atom")
-	#_(.matches u "^.*/[^/.]*$"))))
+    (and (or (.contains u "xml")
+	     (.contains u "rss")
+	     (.contains u "atom")
+	     #_(.matches u "^.*/[^/.]*$"))
+	 (not (.endsWith u "xmlrpc.php")))))
 ;; (let [su (str u)
 ;; 	l (.length su)
 ;; 	drop (= "/" (.charAt su (- l 1)))
