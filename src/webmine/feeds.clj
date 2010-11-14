@@ -133,7 +133,7 @@
       ;;turn records into maps
       (map (partial into {}) res))
     (catch Exception e
-      (log/info (format "Error processing source %s" source))
+      (log/error (format "Error processing source %s" source))
       (.printStackTrace e)
       nil)))
 
