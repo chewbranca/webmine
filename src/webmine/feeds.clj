@@ -34,6 +34,7 @@
 	   "E dd MMM yyyy HH:mm:ss z"
 	   "MMM, dd yyyy HH:mm:ss z"
 	   "dd MMM yyyy HH:mm:ss z"
+	   "E MMM dd HH:mm:ss z yyyy"
 	   "E, dd MMM yyyy HH:mm ZZ"]))
 
 (defn compact-date-time
