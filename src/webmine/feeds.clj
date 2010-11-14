@@ -16,6 +16,7 @@
             [clj-time.coerce :as time-coerce])  
   (:import [com.sun.syndication.feed.synd
             SyndFeedImpl SyndEntryImpl SyndContentImpl]
+	   [org.joda.time.format DateTimeFormat]
            [com.sun.syndication.io
             SyndFeedInput SyndFeedOutput XmlReader]
            java.util.Date
@@ -25,23 +26,18 @@
             SimpleDateFormat ParsePosition]))
 
 (def rfc822-rss-formats
-     [(SimpleDateFormat. "E, dd MMM yy HH:mm:ss Z")
-      (SimpleDateFormat. "E, dd MMM yyyy HH:mm:ss Z")])
+     [(DateTimeFormat/forPattern "E, dd MMM yy HH:mm:ss Z")
+      (DateTimeFormat/forPattern "E, dd MMM yyyy HH:mm:ss Z")])
 
 (defn- compact-date-time [s]
-  (let [date-time (first
-                   (filter identity
-                           (concat (map (fn [f]
-                                          (try
-                                            (time-fmt/parse f s)
-                                            (catch Exception _ nil)))
-                                        (vals time-fmt/formatters))
-                                   (map (fn [sdf]
-                                          (try (when-let [d (.parse sdf s (ParsePosition. 0))]
-                                                 (time-coerce/from-date d))
-                                               (catch Exception _ nil)))
-                                        rfc822-rss-formats))))]
-    (time-fmt/unparse (time-fmt/formatters :date-time) date-time)))
+  (let [date-time
+	(first
+	 (for [fmt (concat rfc822-rss-formats (vals time-fmt/formatters))
+	       :let [d (try
+			 (time-fmt/parse fmt s)
+			 (catch Exception _ nil))]
+	       :when d] d))]
+    (time-coerce/to-string date-time)))
 
 (defn mk-des [entry]
   (if (and (:des entry)
@@ -74,8 +70,7 @@
                ;; date
                (try (first (for [k [:pubDate :date :updatedDate]
                                  :let [s (get-text k)]
-                                 :when k] (if s (compact-date-time s)
-                                              nil)))
+                                 :when s] (compact-date-time s)))
                     (catch Exception e (log/error e)))
                ;; author
                (get-text :author))]
@@ -119,7 +114,8 @@
   Each entry is a map with string values
   :title entry title
   :des  descritpion
-  :date String of date
+  :date String of date (uses to-string canonical
+   rep in clj-time.coerce)
   :author author string
   :content Content of entry (or :description if not content)
   :link Link to content. "
