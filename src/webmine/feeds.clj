@@ -124,12 +124,10 @@
   :content Content of entry (or :description if not content)
   :link Link to content. "
   (try
-    (log/info (format "Fetching entries from %s" source))
     (let [res (->  source
 		   parse-feed
 		   :entries
 		   with-images)]
-      (log/info (format "Got %d entries from %s" (count res) source))
       ;;turn records into maps
       (map (partial into {}) res))
     (catch Exception e
