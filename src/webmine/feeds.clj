@@ -36,7 +36,10 @@
 	   "dd MMM yyyy HH:mm:ss z"
 	   "E, dd MMM yyyy HH:mm ZZ"]))
 
-(defn- compact-date-time [#^String s]
+(defn compact-date-time
+  "take date time string and parse using RSS/Atom
+   formats and falling back on clj-time.formats if necessary"
+  [#^String s]
   (first
    (concat
     (for [#^SimpleDateFormat sdf rfc822-rss-formats
