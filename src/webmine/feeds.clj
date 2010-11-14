@@ -26,18 +26,30 @@
             SimpleDateFormat ParsePosition]))
 
 (def rfc822-rss-formats
-     [(DateTimeFormat/forPattern "E, dd MMM yy HH:mm:ss Z")
-      (DateTimeFormat/forPattern "E, dd MMM yyyy HH:mm:ss Z")])
+     (map #(SimpleDateFormat. %)
+	  ["E, dd MMM yy HH:mm:ss Z"
+	   "E, dd MMM yyyy HH:mm:ss Z"
+	   "E, dd MMM yyyy HH:mm:ss ZZ"
+	   "E, dd MMM yyyy HH:mm:ss z"
+	   "E dd MMM yyyy HH:mm:ss z"
+	   "MMM, dd yyyy HH:mm:ss z"
+	   "dd MMM yyyy HH:mm:ss z"
+	   "E, dd MMM yyyy HH:mm ZZ"]))
 
-(defn- compact-date-time [s]
-  (let [date-time
-	(first
-	 (for [fmt (concat rfc822-rss-formats (vals time-fmt/formatters))
-	       :let [d (try
-			 (time-fmt/parse fmt s)
-			 (catch Exception _ nil))]
-	       :when d] d))]
-    (time-coerce/to-string date-time)))
+(defn- compact-date-time [#^String s]
+  (first
+   (concat
+    (for [#^SimpleDateFormat sdf rfc822-rss-formats
+	  :let [d (try
+		    (.parse sdf (.trim s) (ParsePosition. 0))
+		    (catch Exception _ nil))]
+	  :when d]
+      (-> d time-coerce/from-date time-coerce/to-string))
+    (for [fmt (vals time-fmt/formatters)
+	  :let [d (try
+		    (time-fmt/parse fmt s)
+		    (catch Exception _ nil))]
+	  :when d] (-> d time-coerce/to-string)))))
 
 (defn mk-des [entry]
   (if (and (:des entry)
@@ -68,7 +80,7 @@
                (first (filter identity
                               (map get-text [:description :content :content:encoded])))
                ;; date
-               (try (first (for [k [:pubDate :date :updatedDate]
+               (try (first (for [k [:pubDate :date :updatedDate :dc:date]
                                  :let [s (get-text k)]
                                  :when s] (compact-date-time s)))
                     (catch Exception e (log/error e)))
@@ -318,14 +330,13 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 
 (comment
   (fetch-entries "http://www.rollingstone.com/siteServices/rss/allNews")
+  (compact-date-time "Sun, 31 Oct 2010 03:03:00 EDT")
   (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
   (canonical-feed "http://www.rollingstone.com/")
   (canonical-feed "http://techcrunch.com/2010/11/02/andreessen-horowitz-650m-fund/")
+  time-coerce/from-date
   ; This one requires fix-link, otherwise doesn't work
   (canonical-feed "http://npr.org")
   (fetch-entries "http://www.nytimes.com/services/xml/rss/nyt/HomePage.xml")
   (canonical-feed "http://io9.com/")
-  (canonical-feed "http://www.huffingtonpost.com/")
-)
-
-
+  (canonical-feed "http://www.huffingtonpost.com/"))
