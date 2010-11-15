@@ -53,7 +53,7 @@
 (defn element? [node]
  (and node (= (.getNodeType node) Node/ELEMENT_NODE)))
 
-(defn text-node? [node]
+(defn text-node? [#^Node node]
   (and node (= (.getNodeType node) Node/TEXT_NODE)))
         
 (defn attr [n a]
@@ -126,7 +126,7 @@
 (defn hrefs [es]
   (filter (comp not nil?) (map (comp url href) es)))
 
-(defn do-children [n f]
+(defn do-children [#^Node n f]
   (if (not (and n (.hasChildNodes n)))
     []
     (let [children (.getChildNodes n)]
