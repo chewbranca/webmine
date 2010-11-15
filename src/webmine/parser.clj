@@ -87,11 +87,11 @@
 (defn elements
   "gets the elements of a certian name in the dom
    (count (divs (dom (:body (fetch (url \"http://ftalphaville.ft.com/\")))))) -> 199"
-  [d #^String t]
+  [#^Document d #^String t]
   (let [shitty-data-structure (.getElementsByTagName d t)]
     (filter identity
 	    (for [i (range 0 (.getLength shitty-data-structure))]
-	      (.item shitty-data-structure i)))))
+	      (.item shitty-data-structure (int i))))))
 
 (defn strip-from-dom
   [d es]
