@@ -4,7 +4,11 @@
         webmine.urls
         webmine.readability
         webmine.parser)
-  (:import javax.imageio.ImageIO))
+  (:import javax.imageio.ImageIO)
+  (:import java.awt.image.BufferedImage)
+  (:import java.awt.image.ConvolveOp)
+  (:import java.awt.image.Kernel)
+  (:import java.awt.RenderingHints))
 
 ;;http://www.mkyong.com/regular-expressions/10-java-regular-expression-examples-you-should-know/
 ;; (defn imgs [t]
@@ -75,9 +79,12 @@
 ;;example usage
 ;;(big-img (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))))
 
+(defn read-img [u]
+  (ImageIO/read u))
+
 (defn fetch-img [u]
   (if-let [ur (url u)]
-    (ImageIO/read ur)))
+    (read-img ur)))
 
 (defn img-size [u]
   (if-let [i (fetch-img u)]
@@ -104,7 +111,7 @@
     (divs d))))
 
 (defn big-div [d]
-(max-by (comp count :textContent bean) (extract-all d)))
+  (max-by (comp count :textContent bean) (extract-all d)))
 
 (defn best-img
   [u content]
@@ -153,3 +160,82 @@
 ;;trick outer div with bigger image for promotion.
 ;;http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/
 ;;http://gigaom.com/2010/10/23/latest-smartphones-reviewed-t-mobile-g2-nokia-n8/
+
+;;RESIZING & CROPPING
+;;http://www.componenthouse.com/article-20
+;;http://today.java.net/pub/a/today/2007/04/03/perils-of-image-getscaledinstance.html
+;;http://www.dreamincode.net/forums/topic/162774-java-image-manipulation-part-2-resizing/
+;;http://www.java-tips.org/java-se-tips/javax.imageio/java-2d-api-enhancements-in-j2se-5.0.html
+
+(def hints
+     {:bilinear RenderingHints/VALUE_INTERPOLATION_BILINEAR
+      :bicubic RenderingHints/VALUE_INTERPOLATION_BICUBIC})
+
+(defn resize [i h w & [hint]]
+  (let [hint ((or hint :bilinear)
+	      hints)
+	old-w (.getWidth i nil)
+	old-h (.getHeight i nil)
+	bi (BufferedImage. w h BufferedImage/TYPE_INT_RGB)
+	bg (.createGraphics bi)]
+    (.setRenderingHint bg
+		       RenderingHints/KEY_INTERPOLATION
+		       hint)
+    (.scale bg (/ w old-w) (/ h old-h))
+    (.drawImage bg i 0 0 nil)
+    (.dispose bg)
+    bi))
+
+(defn scale [i h-percent w-percent & [hint]]
+  (let [old-w (.getWidth i nil)
+	old-h (.getHeight i nil)]
+  (resize i (* old-h h-percent) (* old-w w-percent) hint)))
+
+(defn scale-dim [dim new-dim old-dim]
+  (* dim (/ new-dim old-dim)))
+
+(defn scale-to
+"takes an image and either hight or width.
+returns the scaled image, retaining aspect ratio."
+[i {h :height w :width} & [hint]]
+  (let [old-w (.getWidth i nil)
+	old-h (.getHeight i nil)
+	height (or h (scale-dim old-h w old-w))
+	width (or w (scale-dim old-w h old-h))]
+  (resize i height width hint)))
+
+;;TODO: get into a stream for the server API.
+(defn save-img [image filename ext]
+  (let [f (java.io.File. (str filename "." ext))]
+    (try
+     (ImageIO/write image ext f)
+     (catch java.lang.Exception e 
+       (println (.printStackTrace e))))))
+
+;;http://www.exampledepot.com/egs/java.awt.image/Sharpen.html
+
+
+
+    ;; private static BufferedImage toBufferedImage(Image src) {
+    ;;     int w = src.getWidth(null);
+    ;;     int h = src.getHeight(null);
+    ;;     int type = BufferedImage.TYPE_INT_RGB;  // other options
+    ;;     BufferedImage dest = new BufferedImage(w, h, type);
+    ;;     Graphics2D g2 = dest.createGraphics();
+    ;;     g2.drawImage(src, 0, 0, null);
+    ;;     g2.dispose();
+    ;;     return dest;
+    ;; }
+
+
+;;Filters
+;;http://www.jhlabs.com/ip/filters/index.html
+
+;;sharpen
+;;contrast (might not work well for screenshots)
+;;white balance
+;;white color balance
+(defn kernel [image]
+  (let [kernel (ConvolveOp. (Kernel. 3, 3,
+			(float-array [-1, -1, -1, -1, 9, -1, -1, -1, -1])))]
+    (.filter kernel image nil)))
