@@ -24,15 +24,15 @@
   (try
     (let [result (org.apache.xalan.xsltc.trax.SAX2DOM.)
           input (if (instance? java.net.URL source)
-                  (.openStream source)
-                  (StringReader. source))
+                  (.openStream #^java.net.URL source)
+                  (StringReader. #^String source))
           parser (doto (Parser.)
                    (.setContentHandler result)
                    (.setFeature Parser/namespacesFeature false)
                    (.setFeature Parser/namespacePrefixesFeature false)
                    (.setFeature Parser/bogonsEmptyFeature false)
                    (.setFeature Parser/ignoreBogonsFeature true)
-                   (.parse (InputSource. input)))]
+                   (.parse (InputSource. #^java.io.Reader input)))]
       (cast Document (.getDOM result)))
     (catch org.w3c.dom.DOMException _ )
     (catch java.io.IOException _ ))) ;;pushback buffer overflow
@@ -50,20 +50,20 @@
 ; const unsigned short  DOCUMENT_FRAGMENT_NODE         = 11;
 ; const unsigned short  NOTATION_NODE                  = 12;
 
-(defn element? [node]
+(defn element? [#^Node node]
  (and node (= (.getNodeType node) Node/ELEMENT_NODE)))
 
 (defn text-node? [#^Node node]
   (and node (= (.getNodeType node) Node/TEXT_NODE)))
         
-(defn attr [n a]
+(defn attr [#^Node n #^String a]
   (if-let [attrs (.getAttributes n)]
     (if-let [att (.getNamedItem attrs a)]
       (.getValue att))))
         
 (defn attr-map 
   "returns node attributes as map of keyword attribute keys to str value"
-  [n]
+  [#^Node n]
   (when-let [attrs (.getAttributes n)]
        (into {}
           (for [i (range (.getLength attrs))
@@ -75,7 +75,7 @@
 (defn node-type [n] (attr n "type"))
 
 ;;TODO: script thing still not working?
-(defn extract-text [n]
+(defn extract-text [#^Node n]
   (if (not (text-node? n))
     ""
     (.getNodeValue n)))
@@ -94,8 +94,8 @@
 	      (.item shitty-data-structure (int i))))))
 
 (defn strip-from-dom
-  [d es]
-  (doseq [e es]
+  [#^Document d es]
+  (doseq [#^Node e es]
     (.removeChild (.getParentNode e) e))
   (.normalize d)
   d)
@@ -118,7 +118,7 @@
 
 (defn anchors [d] (elements d "a"))
 
-(defn head [d]
+(defn head [#^Document d]
   (.item
    (.getElementsByTagName d "head")
    0))
