@@ -188,7 +188,10 @@
 (defn scale-dim [dim new-dim old-dim]
   (* dim (/ new-dim old-dim)))
 
-(defn scale-to [i {h :height w :width} & [hint]]
+(defn scale-to
+"takes an image and either hight or width.
+returns the scaled image, retaining aspect ratio."
+[i {h :height w :width} & [hint]]
   (let [old-w (.getWidth i nil)
 	old-h (.getHeight i nil)
 	height (or h (scale-dim old-h w old-w))
