@@ -16,6 +16,7 @@
             [clj-time.coerce :as time-coerce])  
   (:import [com.sun.syndication.feed.synd
             SyndFeedImpl SyndEntryImpl SyndContentImpl]
+	   [org.joda.time.format DateTimeFormat]
            [com.sun.syndication.io
             SyndFeedInput SyndFeedOutput XmlReader]
            java.util.Date
@@ -25,23 +26,34 @@
             SimpleDateFormat ParsePosition]))
 
 (def rfc822-rss-formats
-     [(SimpleDateFormat. "E, dd MMM yy HH:mm:ss Z")
-      (SimpleDateFormat. "E, dd MMM yyyy HH:mm:ss Z")])
+     (map #(SimpleDateFormat. %)
+	  ["E, dd MMM yy HH:mm:ss Z"
+	   "E, dd MMM yyyy HH:mm:ss Z"
+	   "E, dd MMM yyyy HH:mm:ss ZZ"
+	   "E, dd MMM yyyy HH:mm:ss z"
+	   "E dd MMM yyyy HH:mm:ss z"
+	   "MMM, dd yyyy HH:mm:ss z"
+	   "dd MMM yyyy HH:mm:ss z"
+	   "E MMM dd HH:mm:ss z yyyy"
+	   "E, dd MMM yyyy HH:mm ZZ"]))
 
-(defn- compact-date-time [s]
-  (let [date-time (first
-                   (filter identity
-                           (concat (map (fn [f]
-                                          (try
-                                            (time-fmt/parse f s)
-                                            (catch Exception _ nil)))
-                                        (vals time-fmt/formatters))
-                                   (map (fn [sdf]
-                                          (try (when-let [d (.parse sdf s (ParsePosition. 0))]
-                                                 (time-coerce/from-date d))
-                                               (catch Exception _ nil)))
-                                        rfc822-rss-formats))))]
-    (time-fmt/unparse (time-fmt/formatters :date-time) date-time)))
+(defn compact-date-time
+  "take date time string and parse using RSS/Atom
+   formats and falling back on clj-time.formats if necessary"
+  [#^String s]
+  (first
+   (concat
+    (for [#^SimpleDateFormat sdf rfc822-rss-formats
+	  :let [d (try
+		    (.parse sdf (.trim s) (ParsePosition. 0))
+		    (catch Exception _ nil))]
+	  :when d]
+      (-> d time-coerce/from-date time-coerce/to-string))
+    (for [fmt (vals time-fmt/formatters)
+	  :let [d (try
+		    (time-fmt/parse fmt s)
+		    (catch Exception _ nil))]
+	  :when d] (-> d time-coerce/to-string)))))
 
 (defn mk-des [entry]
   (if (and (:des entry)
@@ -72,10 +84,9 @@
                (first (filter identity
                               (map get-text [:description :content :content:encoded])))
                ;; date
-               (try (first (for [k [:pubDate :date :updatedDate]
+               (try (first (for [k [:pubDate :date :updatedDate :dc:date]
                                  :let [s (get-text k)]
-                                 :when k] (if s (compact-date-time s)
-                                              nil)))
+                                 :when s] (compact-date-time s)))
                     (catch Exception e (log/error e)))
                ;; author
                (get-text :author))]
@@ -119,21 +130,20 @@
   Each entry is a map with string values
   :title entry title
   :des  descritpion
-  :date String of date
+  :date String of date (uses to-string canonical
+   rep in clj-time.coerce)
   :author author string
   :content Content of entry (or :description if not content)
   :link Link to content. "
   (try
-    (log/info (format "Fetching entries from %s" source))
     (let [res (->  source
 		   parse-feed
 		   :entries
 		   with-images)]
-      (log/info (format "Got %d entries from %s" (count res) source))
       ;;turn records into maps
       (map (partial into {}) res))
     (catch Exception e
-      (log/info (format "Error processing source %s" source))
+      (log/error (format "Error processing source %s" source))
       (.printStackTrace e)
       nil)))
 
@@ -324,14 +334,13 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 
 (comment
   (fetch-entries "http://www.rollingstone.com/siteServices/rss/allNews")
+  (compact-date-time "Sun, 31 Oct 2010 03:03:00 EDT")
   (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
   (canonical-feed "http://www.rollingstone.com/")
   (canonical-feed "http://techcrunch.com/2010/11/02/andreessen-horowitz-650m-fund/")
+  time-coerce/from-date
   ; This one requires fix-link, otherwise doesn't work
   (canonical-feed "http://npr.org")
   (fetch-entries "http://www.nytimes.com/services/xml/rss/nyt/HomePage.xml")
   (canonical-feed "http://io9.com/")
-  (canonical-feed "http://www.huffingtonpost.com/")
-)
-
-
+  (canonical-feed "http://www.huffingtonpost.com/"))

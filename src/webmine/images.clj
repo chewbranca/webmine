@@ -28,11 +28,17 @@
       (ints [h w])
       nil))
 
+(defn hw-from-str
+  [s]
+  (let [[h w] (re-seq #"[0-9]+" s)]
+    (to-hw h w)))
+
+
 (defn hw-from-style
   "in case hight and width are burried inside inline style tag."
   [st]
-  (let [[h w] (re-seq #"[0-9]+" (.getValue st))]
-    (to-hw h w)))
+  (hw-from-str (.getValue st)))
+
 
 (defn hw-from-tags [h w]
   (to-hw (.getValue h)

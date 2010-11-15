@@ -4,5 +4,4 @@
 
 (deftest extract-hw-test
   (let [s "height: 500px; width: 376px;"]
-    (is (= [500 376]
-	   (ints (extract-hw s))))))
+    (is (= [500 376](hw-from-str s)))))
