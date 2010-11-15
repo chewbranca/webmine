@@ -6,6 +6,8 @@
         webmine.parser)
   (:import javax.imageio.ImageIO)
   (:import java.awt.image.BufferedImage)
+  (:import java.awt.image.ConvolveOp)
+  (:import java.awt.image.Kernel)
   (:import java.awt.RenderingHints))
 
 ;;http://www.mkyong.com/regular-expressions/10-java-regular-expression-examples-you-should-know/
@@ -183,12 +185,27 @@
 	old-h (.getHeight i nil)]
   (resize i (* old-h h-percent) (* old-w w-percent) hint)))
 
+(defn scale-dim [dim new-dim old-dim]
+  (* dim (/ new-dim old-dim)))
+
+(defn scale-to [i {h :height w :width} & [hint]]
+  (let [old-w (.getWidth i nil)
+	old-h (.getHeight i nil)
+	height (or h (scale-dim old-h w old-w))
+	width (or w (scale-dim old-w h old-h))]
+  (resize i height width hint)))
+
+;;TODO: get into a stream for the server API.
 (defn save-img [image filename ext]
   (let [f (java.io.File. (str filename "." ext))]
     (try
      (ImageIO/write image ext f)
      (catch java.lang.Exception e 
        (println (.printStackTrace e))))))
+
+;;http://www.exampledepot.com/egs/java.awt.image/Sharpen.html
+
+
 
     ;; private static BufferedImage toBufferedImage(Image src) {
     ;;     int w = src.getWidth(null);
@@ -200,3 +217,16 @@
     ;;     g2.dispose();
     ;;     return dest;
     ;; }
+
+
+;;Filters
+;;http://www.jhlabs.com/ip/filters/index.html
+
+;;sharpen
+;;contrast (might not work well for screenshots)
+;;white balance
+;;white color balance
+(defn kernel [image]
+  (let [kernel (ConvolveOp. (Kernel. 3, 3,
+			(float-array [-1, -1, -1, -1, 9, -1, -1, -1, -1])))]
+    (.filter kernel image nil)))
