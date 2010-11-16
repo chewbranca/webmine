@@ -6,6 +6,7 @@
         webmine.readability
         webmine.parser
         webmine.urls
+	mochi.nlp.process.sent-splitter
         [clojure.java.io :only [input-stream]])
   (:require [work.core :as work]
             [clojure.zip :as zip]
@@ -65,58 +66,58 @@
 (defn count-sentences [s]
   (count (filter period? s)))
 
-(defn- sentences-from-ptags
-  ([ps k]
-     (sentences-from-ptags ps k ""))
-  ([ps k text]
-     (let [t (str text (text-from-dom (first ps)))]
+;;TODO: AB against sentence text-only approach below
+(defn sentences-from-ptags
+  ([body k]
+     (sentences-from-ptags body k ""))
+  ([body k text]
+  (let [d (dom body)
+	ps (elements d "p")
+	t (str text (text-from-dom (first ps)))]
        (if (or (>= (count-sentences t)
 		   k)
 	       (empty? (rest ps)))
 	 t
 	 (recur (rest ps) k t)))))
 
-;;TODO: just extract text first and expand by periods, or continue with p-tag based approach?
-(defn first-k-sentences [body k]
-  (let [d (dom body)
-	ps (elements d "p")]
-    (sentences-from-ptags ps k)))
+(defn first-k-sentences
+"returns the first k sentences from a string t."
+[t k]
+  (let [sps (sent-spans t)
+	idx (if (< (count sps) k)
+	      (second (last sps))
+	      (second (nth sps (- k 1))))]
+    (.substring t 0 (- idx 1))))
 
 ;;TODO: duplication from webmine.images.  Should probably be pulling into readability.
 (defn best-body [content]
   (let [d (dom content)
 	;;first try to get the text out of the core body div.
-	core-text (text-from-dom (readability-div d))
-	;;if that we have core images, use those, if not, get all the images in the dom
-	best (if (and core-text
-			     (> (count core-text)
-					  0))
-		      core-text
-		      (text-from-dom d))]
-    best))
+	target-d (readability-div d)]
+    (if (not target-d)
+      (clean-text d)
+      (let [t (clean-text target-d)]
+	(if (> (count t) 0) t
+	    (clean-text d))))))
 
 (defn mk-des [entry]
   (let [min-sentences 3
-	f (:fetched entry)
 	d (:des entry)
-	con (:content entry)
-	c (if f (best-body con)
-	      con)]
+	b (:body entry)
+	c (:content entry)]
     (if (and d
 	     (not (= d c))
-	     (>= (count-sentences (text-from-dom (dom d)))
+	     (>= (count-sentences (clean-text (dom d)))
 		 min-sentences))
       entry
-      (assoc entry :des (first-k-sentences c min-sentences)))))
+      (assoc entry :des (first-k-sentences (best-body b) min-sentences)))))
 
-(defn ensure-content
-  "Takes an entiry.  if missing :content, fetch the entry and extract the best div using readability."
+(defn fetch-body
+  "Takes an entry.  assocs' in the body of the link."
   [e]
   (try
-   (if (:content e) e
-       (assoc e :fetched true
-	      :content
-	      (:body (http/get (:link e)))))
+   (assoc e :body
+	      (:body (http/get (:link e))))
    (catch java.lang.Exception _ e)))
 
 (defrecord Feed [title des link entries])
@@ -175,7 +176,7 @@ entry))
   (imgs/with-best-img e :link :content))
 
 (defn complete-entry [e]
-  (-> e ensure-content mk-des with-image))
+  (-> e fetch-body mk-des with-image))
 
 (defn entries [source]
   "
