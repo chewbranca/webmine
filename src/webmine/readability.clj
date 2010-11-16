@@ -156,14 +156,16 @@
 (defn- strip-tags [d tags]
   (apply d tags))
 
-(defn extract-content [raw-html & tags-to-exclude]
-  (-> raw-html
-      parser/dom
-      parser/strip-non-content
-      (parser/strip-tags tags-to-exclude)
-      strip-bad-divs!
-      find-best-content-div
-      .getTextContent))    
+(defn extract-content [raw-html]
+  (let [d (-> raw-html parser/dom parser/strip-non-content)
+	#^String txt
+	  (-> d
+	      strip-bad-divs!
+	      find-best-content-div
+	      .getTextContent)]
+    (if (.isEmpty txt)
+      (.getTextContent d)
+      txt)))    
 
 
 (comment 
@@ -187,13 +189,9 @@
 
   ;; DOESNT WORK - no <p> tags !
   "http://gardening.about.com/od/growingtips/tp/Tomato_Tips.htm"
- 
-  (-> "http://www.huffingtonpost.com/michael-moore/juan-williams-is-right-po_b_772766.html"
-       java.net.URL.      
-       parser/dom
-       parser/strip-non-content
-       strip-bad-divs!
-       find-best-content-div
-       .getTextContent)
+  
+  (-> "http://io9.com/5671733/air-force-academy-now-welcomes-spell+casters"
+      slurp
+     extract-content)
        
 )    
