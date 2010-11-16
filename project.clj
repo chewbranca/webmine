@@ -10,7 +10,7 @@
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
                  [clj-http "0.1.0-SNAPSHOT"]
-		 [org.clojars.thnetos/opennlp-tools "1.4.3"]
+		 [nlputil-clj "1.0-SNAPSHOT"]
                  [work "0.0.1-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
