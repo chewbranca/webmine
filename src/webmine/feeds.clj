@@ -82,16 +82,42 @@
 	ps (elements d "p")]
     (sentences-from-ptags ps k)))
 
+;;TODO: duplication from webmine.images.  Should probably be pulling into readability.
+(defn best-body [content]
+  (let [d (dom content)
+	;;first try to get the text out of the core body div.
+	core-text (text-from-dom (readability-div d))
+	;;if that we have core images, use those, if not, get all the images in the dom
+	best (if (and core-text
+			     (> (count core-text)
+					  0))
+		      core-text
+		      (text-from-dom d))]
+    best))
+
 (defn mk-des [entry]
   (let [min-sentences 3
+	f (:fetched entry)
 	d (:des entry)
-	c (:content entry)]
+	con (:content entry)
+	c (if f (best-body con)
+	      con)]
     (if (and d
 	     (not (= d c))
 	     (>= (count-sentences (text-from-dom (dom d)))
 		 min-sentences))
       entry
       (assoc entry :des (first-k-sentences c min-sentences)))))
+
+(defn ensure-content
+  "Takes an entiry.  if missing :content, fetch the entry and extract the best div using readability."
+  [e]
+  (try
+   (if (:content e) e
+       (assoc e :fetched true
+	      :content
+	      (:body (http/get (:link e)))))
+   (catch java.lang.Exception _ e)))
 
 (defrecord Feed [title des link entries])
 
@@ -118,9 +144,7 @@
                     (catch Exception e (log/error e)))
                ;; author
                (get-text :author))]
-    (try (mk-des entry)
-         (catch Exception _
-           entry))))
+entry))
 
 (defn parse-feed [source]
   "returns record Feed representing a snapshot of a feed. Supports keys
@@ -147,20 +171,11 @@
     (catch Exception _  (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
 			     nil))))
 
+(defn with-image [e]
+  (imgs/with-best-img e :link :content))
 
-(defn with-images [es]
-  (map #(imgs/with-best-img % :link :content) 
-       es))
-
-(defn ensure-entries
-  "Takes a seq of entires.  if any are missing :content, fetch the entry and extract the best div using readability."
-  [es]
-  (map
-   (fn [e]
-     (if (:content e) e
-	 (assoc e :content
-	 (best-body (:body (http/get (:link e)))))))
-   es))
+(defn complete-entry [e]
+  (-> e ensure-content mk-des with-image))
 
 (defn entries [source]
   "
@@ -177,9 +192,7 @@
   (try
     (let [res (->  source
 		   parse-feed
-		   :entries
-		   with-images
-		   ensure-entries)]
+		   :entries)]
       ;;turn records into maps
       (map (partial into {}) res))
     (catch Exception e
@@ -194,19 +207,6 @@
   (-> body (.getBytes "UTF-8")
 	       input-stream
 	       entries))
-
-;;TODO: duplicaiton from some stuff in images.  Should probably be pulling into readability.
-(defn best-body [content]
-  (let [d (dom content)
-	;;first try to get the text out of the core body div.
-	core-text (text-from-dom (readability-div d))
-	;;if that we have core images, use those, if not, get all the images in the dom
-	best (if (and core-text
-			     (> (count core-text)
-					  0))
-		      core-text
-		      (text-from-dom d))]
-    best))
 
 (defn feed? [item]
   (and item
