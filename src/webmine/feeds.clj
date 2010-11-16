@@ -3,6 +3,7 @@
         clojure.set
         clojure.contrib.java-utils
         webmine.core
+        webmine.readability
         webmine.parser
         webmine.urls
         [clojure.java.io :only [input-stream]])
@@ -12,6 +13,7 @@
             [clojure.contrib.logging :as log]
             [clojure.contrib.zip-filter :as zip-filter]
             [clojure.contrib.zip-filter.xml :as xml-zip]
+            [clj-http.client :as http]
             [clj-time.format :as time-fmt]
             [clj-time.coerce :as time-coerce])  
   (:import [com.sun.syndication.feed.synd
@@ -55,15 +57,41 @@
 		    (catch Exception _ nil))]
 	  :when d] (-> d time-coerce/to-string)))))
 
+;;TODO better way?
+(defn to-char [s] (.charAt s 0))
+
+(defn period? [c] (= (to-char ".") c))
+
+(defn count-sentences [s]
+  (count (filter period? s)))
+
+(defn- sentences-from-ptags
+  ([ps k]
+     (sentences-from-ptags ps k ""))
+  ([ps k text]
+     (let [t (str text (text-from-dom (first ps)))]
+       (if (or (>= (count-sentences t)
+		   k)
+	       (empty? (rest ps)))
+	 t
+	 (recur (rest ps) k t)))))
+
+;;TODO: just extract text first and expand by periods, or continue with p-tag based approach?
+(defn first-k-sentences [body k]
+  (let [d (dom body)
+	ps (elements d "p")]
+    (sentences-from-ptags ps k)))
+
 (defn mk-des [entry]
-  (if (and (:des entry)
-	   (not (= (:des entry)
-		   (:content entry))))
-    entry
-;;TODO: keep formatting but not img tags for web client?
-    (let [d (text-from-dom
-	     (first (elements (dom (:content entry)) "p")))]
-      (assoc entry :des d))))
+  (let [min-sentences 3
+	d (:des entry)
+	c (:content entry)]
+    (if (and d
+	     (not (= d c))
+	     (>= (count-sentences (text-from-dom (dom d)))
+		 min-sentences))
+      entry
+      (assoc entry :des (first-k-sentences c min-sentences)))))
 
 (defrecord Feed [title des link entries])
 
@@ -119,9 +147,20 @@
     (catch Exception _  (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
 			     nil))))
 
+
 (defn with-images [es]
   (map #(imgs/with-best-img % :link :content) 
        es))
+
+(defn ensure-entries
+  "Takes a seq of entires.  if any are missing :content, fetch the entry and extract the best div using readability."
+  [es]
+  (map
+   (fn [e]
+     (if (:content e) e
+	 (assoc e :content
+	 (best-body (:body (http/get (:link e)))))))
+   es))
 
 (defn entries [source]
   "
@@ -139,7 +178,8 @@
     (let [res (->  source
 		   parse-feed
 		   :entries
-		   with-images)]
+		   with-images
+		   ensure-entries)]
       ;;turn records into maps
       (map (partial into {}) res))
     (catch Exception e
@@ -154,6 +194,19 @@
   (-> body (.getBytes "UTF-8")
 	       input-stream
 	       entries))
+
+;;TODO: duplicaiton from some stuff in images.  Should probably be pulling into readability.
+(defn best-body [content]
+  (let [d (dom content)
+	;;first try to get the text out of the core body div.
+	core-text (text-from-dom (readability-div d))
+	;;if that we have core images, use those, if not, get all the images in the dom
+	best (if (and core-text
+			     (> (count core-text)
+					  0))
+		      core-text
+		      (text-from-dom d))]
+    best))
 
 (defn feed? [item]
   (and item
