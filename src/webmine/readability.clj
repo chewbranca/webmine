@@ -157,7 +157,9 @@
   (apply d tags))
 
 (defn extract-content [raw-html]
-  (let [d (-> raw-html parser/dom parser/strip-non-content)
+  (let [d (let [root (parser/dom raw-html)]
+	    (try (parser/strip-non-content root)
+		 (catch Exception _ root)))
 	#^String txt
 	  (try (-> d
 		   strip-bad-divs!
