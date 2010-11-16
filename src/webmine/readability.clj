@@ -159,11 +159,12 @@
 (defn extract-content [raw-html]
   (let [d (-> raw-html parser/dom parser/strip-non-content)
 	#^String txt
-	  (-> d
-	      strip-bad-divs!
-	      find-best-content-div
-	      .getTextContent)]
-    (if (.isEmpty txt)
+	  (try (-> d
+		   strip-bad-divs!
+		   find-best-content-div
+		   .getTextContent)
+	       (catch Exception _ nil))]
+    (if (or (nil? txt) (.isEmpty txt))
       (.getTextContent d)
       txt)))    
 
