@@ -5,7 +5,7 @@
   :dependencies [[org.clojure/clojure "1.2.0"]
                  [org.clojure/clojure-contrib "1.2.0"]
                  [xerces/xercesImpl "2.9.1"]
-                 [org.ccil.cowan.tagsoup/tagsoup "1.2"]
+                 [clj-sys/tagsoup "1.3-SNAPSHOT"]
                  [xalan "2.7.1"]
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
