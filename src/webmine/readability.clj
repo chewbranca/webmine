@@ -167,7 +167,7 @@
 		   .getTextContent)
 	       (catch Exception _ nil))]
     (if (or (nil? txt) (.isEmpty txt))
-      (.getTextContent d)
+      (parser/text-from-dom d)
       txt)))    
 
 
