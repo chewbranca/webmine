@@ -6,7 +6,7 @@
         webmine.readability
         webmine.parser
         webmine.urls
-	mochi.nlp.process.sent-splitter
+        mochi.nlp.process.sent-splitter
         [clojure.java.io :only [input-stream]])
   (:require [work.core :as work]
             [clojure.zip :as zip]
@@ -19,7 +19,7 @@
             [clj-time.coerce :as time-coerce])  
   (:import [com.sun.syndication.feed.synd
             SyndFeedImpl SyndEntryImpl SyndContentImpl]
-	   [org.joda.time.format DateTimeFormat]
+           [org.joda.time.format DateTimeFormat]
            [com.sun.syndication.io
             SyndFeedInput SyndFeedOutput XmlReader]
            java.util.Date
@@ -106,9 +106,9 @@
 	b (:body entry)
 	c (:content entry)]
     (if (and d
-	     (not (= d c))
-	     (>= (count-sentences (clean-text (dom d)))
-		 min-sentences))
+             (not= d c)
+             (>= (count-sentences (clean-text (dom d)))
+                 min-sentences))
       entry
       (assoc entry :des (first-k-sentences (best-body b) min-sentences)))))
 
