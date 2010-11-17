@@ -33,7 +33,7 @@
                    (.setFeature Parser/bogonsEmptyFeature false)
                    (.setFeature Parser/ignoreBogonsFeature true)
                    (.parse (InputSource. #^java.io.Reader input)))]
-      (cast Document (.getDOM result)))
+      (.getDOM result))
     (catch org.w3c.dom.DOMException _ )
     (catch java.io.IOException _ ))) ;;pushback buffer overflow
 
