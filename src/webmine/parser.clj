@@ -1,4 +1,4 @@
-(ns #^{:doc
+(ns ^{:doc
   "parsing foo for learning machine hackers of the interwebs
   htmlparsing showdown: http://www.benmccann.com/dev-blog/java-html-parsing-library-comparison/
   revisit the HtmlParser and DOMBuilder in nutch and bixo if it seems like we
@@ -24,8 +24,8 @@
   (try
     (let [result (org.apache.xalan.xsltc.trax.SAX2DOM.)
           input (if (instance? java.net.URL source)
-                  (.openStream #^java.net.URL source)
-                  (StringReader. #^String source))
+                  (.openStream ^java.net.URL source)
+                  (StringReader. ^String source))
           parser (doto (Parser.)
                    (.setContentHandler result)
                    (.setFeature Parser/namespacesFeature false)
