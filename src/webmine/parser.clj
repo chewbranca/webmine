@@ -12,7 +12,7 @@
   (:import
     java.io.StringReader
     org.ccil.cowan.tagsoup.Parser
-    (org.w3c.dom Node Document)
+    (org.w3c.dom Node Document Element)
     (org.xml.sax XMLReader InputSource)
     (javax.xml.transform Transformer TransformerFactory)
     javax.xml.transform.sax.SAXSource
@@ -87,8 +87,11 @@
 (defn elements
   "gets the elements of a certian name in the dom
    (count (divs (dom (:body (fetch (url \"http://ftalphaville.ft.com/\")))))) -> 199"
-  [#^Document d #^String t]
-  (let [shitty-data-structure (.getElementsByTagName d t)]
+  [p #^String t]
+  
+  (let [shitty-data-structure (condp isa? (class p)
+                                  Document (.getElementsByTagName ^Document p t)
+                                  Element (.getElementsByTagName ^Element p t))]
     (filter identity
 	    (for [i (range 0 (.getLength shitty-data-structure))]
 	      (.item shitty-data-structure (int i))))))
