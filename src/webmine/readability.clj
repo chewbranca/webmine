@@ -194,7 +194,8 @@
 
   ;; DOESNT WORK - no <p> tags !
   "http://gardening.about.com/od/growingtips/tp/Tomato_Tips.htm"
-  
+
+  (extract-content (slurp "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues"))
   (-> "http://io9.com/5671733/air-force-academy-now-welcomes-spell+casters"
       slurp
      extract-content)
