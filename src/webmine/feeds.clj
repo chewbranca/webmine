@@ -90,19 +90,7 @@
     (when (> idx 0)
 	(.substring t 0 (- idx 1)))))
 
-;;TODO: duplication from webmine.images.  Should probably be pulling into readability.
-;; (defn best-body [content]
-;;   (when
-;;       (let [d (dom content)
-;; 	 ;;first try to get the text out of the core body div.
-;; 	 target-d (readability-div d)]
-;;      (if (not target-d)
-;;        (clean-text d)
-;;        (let [t (clean-text target-d)]
-;; 	 (if (> (count t) 0) t
-;; 	     (clean-text d)))))))
-
-(defn mk-des [entry]
+(defn with-des [entry]
   (let [min-sentences 3
 	d (:des entry)
 	b (:body entry)
@@ -127,11 +115,14 @@
 (defrecord FeedEntry [title link content des date author])
 
 (defn with-image [e]
-  (imgs/with-best-img e :link
-    (max-key (comp count (partial get e)) :body :content)))
+  (imgs/with-best-img e :link :body))
+
+(defn with-text [e]
+  (assoc e :text
+  (extract-content (:body e))))
 
 (defn complete-entry [e]
-  (-> e mk-des with-image))
+  (-> e fetch-body with-text with-des with-image))
 
 (defn- item-node-to-entry [item]
   (let [item-root (zip/xml-zip item)

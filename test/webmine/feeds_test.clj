@@ -39,9 +39,9 @@
 
 (deftest des-tests
   (is (= bad-tc-fixed
-	 (mk-des bad-tc)))
+	 (with-des bad-tc)))
   (is (= good-tc
-	 (mk-des good-tc))))
+	 (with-des good-tc))))
 
 (deftest date-parsing
   ;; Ensure that the datetime key strings are canonicalized to the

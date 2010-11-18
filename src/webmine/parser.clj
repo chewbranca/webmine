@@ -111,8 +111,11 @@
     (recur (strip-from-dom d (elements d (first tags)))
 	   (rest tags))))
 
+;;TODO: WTF is up with the required calling of strip-non-content twice?
+;;something about the side effects happening in the stip tags or stip from dom fns?
 (defn strip-non-content [d]
-  (strip-tags d "script" "style"))
+  (let [f #(strip-tags % "script" "style")]
+    (f (f d))))
 
 (defn divs
   "gets the divs in a dom.
@@ -162,11 +165,8 @@
        (doall (map #(.append buffer %) results))
        (str buffer)))))
 
-;;TODO: WTF is up with the required calling of strip-non-content twice?
-;;something about the side effects happening in the stip tags or stip from dom fns?
 (defn clean-text [d]
-  (text-from-dom (strip-non-content
-		  (strip-non-content d))))
+  (text-from-dom (strip-non-content d)))
 
 (defn scrub-html
   "takes a document map and a list of keys containing html strings.
