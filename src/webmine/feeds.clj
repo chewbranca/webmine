@@ -87,18 +87,20 @@
 	idx (if (< (count sps) k)
 	      (second (last sps))
 	      (second (nth sps (- k 1))))]
-    (.substring t 0 (- idx 1))))
+    (when (> idx 0)
+	(.substring t 0 (- idx 1)))))
 
 ;;TODO: duplication from webmine.images.  Should probably be pulling into readability.
-(defn best-body [content]
-  (let [d (dom content)
-	;;first try to get the text out of the core body div.
-	target-d (readability-div d)]
-    (if (not target-d)
-      (clean-text d)
-      (let [t (clean-text target-d)]
-	(if (> (count t) 0) t
-	    (clean-text d))))))
+;; (defn best-body [content]
+;;   (when
+;;       (let [d (dom content)
+;; 	 ;;first try to get the text out of the core body div.
+;; 	 target-d (readability-div d)]
+;;      (if (not target-d)
+;;        (clean-text d)
+;;        (let [t (clean-text target-d)]
+;; 	 (if (> (count t) 0) t
+;; 	     (clean-text d)))))))
 
 (defn mk-des [entry]
   (let [min-sentences 3
@@ -110,7 +112,7 @@
              (>= (count-sentences (clean-text (dom d)))
                  min-sentences))
       entry
-      (assoc entry :des (first-k-sentences (best-body b) min-sentences)))))
+      (assoc entry :des (-> b extract-content (first-k-sentences  min-sentences))))))
 
 (defn fetch-body
   "Takes an entry.  assocs' in the body of the link."
@@ -124,28 +126,34 @@
 
 (defrecord FeedEntry [title link content des date author])
 
+(defn with-image [e]
+  (imgs/with-best-img e :link
+    (max-key (comp count (partial get e)) :body :content)))
+
+(defn complete-entry [e]
+  (-> e mk-des with-image))
+
 (defn- item-node-to-entry [item]
   (let [item-root (zip/xml-zip item)
-        get-text (fn [k] (xml-zip/xml1-> item-root k xml-zip/text))
-        entry (FeedEntry.
-               ;; title
-               (get-text :title)
-               ;; link
-               (get-text :link)
-               ;; content
-               (apply max-key count
-                      (map get-text [:content :description :content:encoded]))
-               ;; des
-               (first (filter identity
-                              (map get-text [:description :content :content:encoded])))
-               ;; date
-               (try (first (for [k [:pubDate :date :updatedDate :dc:date]
-                                 :let [s (get-text k)]
-                                 :when s] (compact-date-time s)))
-                    (catch Exception e (log/error e)))
-               ;; author
-               (get-text :author))]
-entry))
+        get-text (fn [k] (xml-zip/xml1-> item-root k xml-zip/text))]
+    (FeedEntry.
+     ;; title
+     (get-text :title)
+     ;; link
+     (get-text :link)
+     ;; content
+     (apply max-key count
+	    (map get-text [:content :description :content:encoded]))
+     ;; des
+     (first (filter identity
+		    (map get-text [:description :content :content:encoded])))
+     ;; date
+     (try (first (for [k [:pubDate :date :updatedDate :dc:date]
+		       :let [s (get-text k)]
+		       :when s] (compact-date-time s)))
+	  (catch Exception e (log/error e)))
+     ;; author
+     (get-text :author))))
 
 (defn parse-feed [source]
   "returns record Feed representing a snapshot of a feed. Supports keys
@@ -166,17 +174,13 @@ entry))
 	 (doall
 	   (for [n (xml-zip/xml-> root :channel :item zip/node)
 		 :let [entry (into {}
-				 (filter second
-					 (item-node-to-entry n)))]]
-	   entry))))
-    (catch Exception _  (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
-			     nil))))
-
-(defn with-image [e]
-  (imgs/with-best-img e :link :content))
-
-(defn complete-entry [e]
-  (-> e fetch-body mk-des with-image))
+				   (filter second
+					   (item-node-to-entry n)))]]
+	     entry))))
+    (catch Exception e
+      (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
+	  (.printStackTrace e)
+	  nil))))
 
 (defn entries [source]
   "
@@ -184,6 +188,7 @@ entry))
   return seq of entries from rss feed source.
   Each entry is a map with string values
   :title entry title
+  :img image url
   :des  descritpion
   :date String of date (uses to-string canonical
    rep in clj-time.coerce)
@@ -387,14 +392,15 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 		    (second (:homepage outlinks-map)))))
 
 (comment
+  (use 'webmine.readability)
   (fetch-entries "http://www.rollingstone.com/siteServices/rss/allNews")
   (compact-date-time "Sun, 31 Oct 2010 03:03:00 EDT")
   (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
   (canonical-feed "http://www.rollingstone.com/")
   (canonical-feed "http://techcrunch.com/2010/11/02/andreessen-horowitz-650m-fund/")
-  time-coerce/from-date
   ; This one requires fix-link, otherwise doesn't work
   (canonical-feed "http://npr.org")
-  (fetch-entries "http://www.nytimes.com/services/xml/rss/nyt/HomePage.xml")
+  (fetch-entries "http://scripting.com/rss.xml")
+  (fetch-entries "http://feeds.nytimes.com/nyt/rss/HomePage")
   (canonical-feed "http://io9.com/")
   (canonical-feed "http://www.huffingtonpost.com/"))

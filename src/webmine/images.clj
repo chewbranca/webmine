@@ -140,9 +140,9 @@
 
 (defn with-best-img [m url-key content-key]
   (let [img (try
-	         (best-img (url-key m)
-	       (content-key m))
-		 (catch java.lang.Exception _ nil))]
+	      (best-img (url-key m)
+			(content-key m))
+	      (catch java.lang.Exception _ nil))]
   (assoc m :img img)))
 
 ;;gets a crane:
