@@ -15,8 +15,8 @@
 ;;   (re-seq #"([^\\s]+(\\.(?i)(jpg|png|gif|bmp))$)" t))
 ;;"([^\s]+(\.(?i)(jpg|png|gif|bmp))$)" t))
 
-(defn ints [xs]
-  (map #(Integer/parseInt %) xs))
+;; (defn ints [xs]
+;;   (map #(Integer/parseInt %) xs))
 
 (defn hw? [h w]
   (and h w
@@ -25,7 +25,7 @@
 
 (defn to-hw [h w] 
     (if (hw? h w)
-      (ints [h w])
+      (map #(Integer/parseInt %) [h w])
       nil))
 
 (defn hw-from-str
