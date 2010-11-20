@@ -33,7 +33,6 @@
   (let [[h w] (re-seq #"[0-9]+" s)]
     (to-hw h w)))
 
-
 (defn hw-from-style
   "in case hight and width are burried inside inline style tag."
   [st]
@@ -88,8 +87,8 @@
 
 (defn img-size [u]
   (if-let [i (fetch-img u)]
-    [(.getHeight i)
-     (.getWidth i)]))
+    {:width (.getWidth i)
+     :height (.getHeight i)}))
 
 (defn fetch-sizes [imgs]
   (map 
@@ -213,20 +212,6 @@ returns the scaled image, retaining aspect ratio."
        (println (.printStackTrace e))))))
 
 ;;http://www.exampledepot.com/egs/java.awt.image/Sharpen.html
-
-
-
-    ;; private static BufferedImage toBufferedImage(Image src) {
-    ;;     int w = src.getWidth(null);
-    ;;     int h = src.getHeight(null);
-    ;;     int type = BufferedImage.TYPE_INT_RGB;  // other options
-    ;;     BufferedImage dest = new BufferedImage(w, h, type);
-    ;;     Graphics2D g2 = dest.createGraphics();
-    ;;     g2.drawImage(src, 0, 0, null);
-    ;;     g2.dispose();
-    ;;     return dest;
-    ;; }
-
 
 ;;Filters
 ;;http://www.jhlabs.com/ip/filters/index.html
