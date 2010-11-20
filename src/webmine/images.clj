@@ -15,8 +15,8 @@
 ;;   (re-seq #"([^\\s]+(\\.(?i)(jpg|png|gif|bmp))$)" t))
 ;;"([^\s]+(\.(?i)(jpg|png|gif|bmp))$)" t))
 
-(defn ints [xs]
-  (map #(Integer/parseInt %) xs))
+;; (defn ints [xs]
+;;   (map #(Integer/parseInt %) xs))
 
 (defn hw? [h w]
   (and h w
@@ -24,9 +24,11 @@
        (not (= "" w))))
 
 (defn to-hw [h w] 
-    (if (hw? h w)
-      (ints [h w])
-      nil))
+  (if (hw? h w)
+    (->> [h w]
+	 (map #(.replaceAll % "[^0-9]" ""))
+	 (map #(Integer/parseInt %)))
+    nil))
 
 (defn hw-from-str
   [s]
@@ -224,3 +226,8 @@ returns the scaled image, retaining aspect ratio."
   (let [kernel (ConvolveOp. (Kernel. 3, 3,
 			(float-array [-1, -1, -1, -1, 9, -1, -1, -1, -1])))]
     (.filter kernel image nil)))
+
+
+(comment
+  (best-img-at "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues")
+)

@@ -69,7 +69,7 @@
         (parser/do-children div identity)))
     :good-class-word
      (->> div parser/attr-map :class (has-match? POSITIVE) to-binary)
-    :good-id-word
+   :good-id-word
      (->> div parser/attr-map :id (has-match? POSITIVE) to-binary)    
     :bad-class-word 
      (->> div parser/attr-map :class (has-match? NEGATIVE) to-binary)
@@ -132,12 +132,12 @@
             (fn [div]
               (or 
                 ; Footers Bad
-                (or 
-                  (->> div parser/attr-map :class (has-match? #"footer"))
-                  (->> div parser/attr-map :id (has-match? #"footer")))
+                ;; #_(or 
+                ;;   (->> div parser/attr-map :class (has-match? #"footer"))
+                ;;   (->> div parser/attr-map :id (has-match? #"footer")))
                 ; Related
-                (or 
-                  (->> div parser/attr-map :class (has-match? #"related")))  
+                ;; (or 
+                ;;   (->> div parser/attr-map :class (has-match? #"related")))  
                 ; You can't fool me
                 (let [style (-> div parser/attr-map :style)]
                   (and style
@@ -185,6 +185,8 @@
   "http://www.nytimes.com/2010/10/24/world/asia/24afghan.html?_r=1&hp"
   ; parser.clj doesn't clear the scripts here
   "http://io9.com/5671733/air-force-academy-now-welcomes-spell+casters"
+  ; Works for this now
+  "http://www.freekareem.org/2010/11/16/kareem-amer-is-free/"
 
   ;; Mostly Work 
   ; Get content but lots of other stuff in content DIV
@@ -192,7 +194,8 @@
 
   ;; DOESNT WORK - no <p> tags !
   "http://gardening.about.com/od/growingtips/tp/Tomato_Tips.htm"
-  
+
+  (extract-content (slurp "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues"))
   (-> "http://io9.com/5671733/air-force-academy-now-welcomes-spell+casters"
       slurp
      extract-content)
