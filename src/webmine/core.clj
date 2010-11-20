@@ -1,13 +1,6 @@
 (ns webmine.core
   (:require [clj-http.client :as client]))
 
-;; From l.core
-(defn maybe-comp [& fs]
-  (fn [x]
-    (reduce
-     #(if (not %1) %1 (%2 %1))
-     x (reverse fs))))
-
 ;; From infer.core
 (defn best-by [compare keyfn coll]
   (if (empty? coll) nil
