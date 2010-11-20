@@ -8,7 +8,7 @@
   (:use clojure.xml
         webmine.core
         webmine.urls
-        [plumbing :only [maybe-comp]])
+        [plumbing.core :only [maybe-comp]])
   (:import java.io.StringReader
            org.ccil.cowan.tagsoup.Parser
            (org.w3c.dom Node Document Element)
