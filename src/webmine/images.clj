@@ -23,23 +23,30 @@
        (not (= "" h))
        (not (= "" w))))
 
+(defn extract-dim [d]
+  (Integer/parseInt
+   (.replaceAll d "[^0-9]" "")))
+
 (defn to-hw [h w] 
   (if (hw? h w)
-    (->> [h w]
-	 (map #(.replaceAll % "[^0-9]" ""))
-	 (map #(Integer/parseInt %)))
+    {:width (extract-dim w)
+     :height (extract-dim h)}
     nil))
 
 (defn hw-from-str
   [s]
-  (let [[h w] (re-seq #"[0-9]+" s)]
-    (to-hw h w)))
+  (let [wi (.indexOf "s" "width")
+	hi (.indexOf "s" "height")]
+    (if (or (= -1 wi)
+	    (= -1 hi))
+      nil
+      (let [[a b] (re-seq #"[0-9]+" s)]
+	(if (< hi wi) (to-hw b a) (to-hw a b))))))
 
 (defn hw-from-style
   "in case hight and width are burried inside inline style tag."
   [st]
   (hw-from-str (.getValue st)))
-
 
 (defn hw-from-tags [h w]
   (to-hw (.getValue h)
@@ -146,22 +153,6 @@
 	      (catch java.lang.Exception _ nil))]
   (assoc m :img img)))
 
-;;gets a crane:
-;;http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html
-
-;;gets me:
-;;http://measuringmeasures.com/blog/2010/10/21/clojure-key-value-stores-voldemort-and-s3.html
-
-;;image with no size tags, also has later image in core body that is slightly larger, we should get the top image.
-;;http://techcrunch.com/2010/10/22/stripon/
-
-;;rolling back to all images when there are none in the body.  image is also relative path to host.
-;;http://daringfireball.net/2010/10/apple_no_longer_bundling_flash_with_mac_os_x
-
-;;trick outer div with bigger image for promotion.
-;;http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/
-;;http://gigaom.com/2010/10/23/latest-smartphones-reviewed-t-mobile-g2-nokia-n8/
-
 ;;RESIZING & CROPPING
 ;;http://www.componenthouse.com/article-20
 ;;http://today.java.net/pub/a/today/2007/04/03/perils-of-image-getscaledinstance.html
@@ -226,7 +217,6 @@ returns the scaled image, retaining aspect ratio."
   (let [kernel (ConvolveOp. (Kernel. 3, 3,
 			(float-array [-1, -1, -1, -1, 9, -1, -1, -1, -1])))]
     (.filter kernel image nil)))
-
 
 (comment
   (best-img-at "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues")
