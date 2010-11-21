@@ -10,11 +10,19 @@
     (is (= {:height 500 :width 376}
 	   (hw-from-str t)))))
 
+(deftest at-leat-test
+  (is (= [{:size {:height 150 :width 160}}]
+	 (at-least 10000
+	    [{:size {:height 150 :width 160}}
+	    {:size {:height 50 :width 60}}]))))
+
 (deftest find-best-img
   (is (= {:url "https://docs.google.com/File?id=dhhw653p_848g39gd9gx_b",
 	  :size {:width 640, :height 480}}
 	  (best-img-at
-"http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html"))))
+"http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html")))
+  (is (= nil (best-img-at "http://alexisohanian.com/fantastic-advice-on-why-its-better-to-be-hard" 10000))))
+
 
 ;;gets me:
 ;;http://measuringmeasures.com/blog/2010/10/21/clojure-key-value-stores-voldemort-and-s3.html

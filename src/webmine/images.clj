@@ -35,13 +35,13 @@
 
 (defn hw-from-str
   [s]
-  (let [wi (.indexOf "s" "width")
-	hi (.indexOf "s" "height")]
+  (let [wi (.indexOf s "width")
+	hi (.indexOf s "height")]
     (if (or (= -1 wi)
 	    (= -1 hi))
       nil
       (let [[a b] (re-seq #"[0-9]+" s)]
-	(if (< hi wi) (to-hw b a) (to-hw a b))))))
+	(if (< hi wi) (to-hw a b) (to-hw b a))))))
 
 (defn hw-from-style
   "in case hight and width are burried inside inline style tag."
@@ -77,9 +77,11 @@
 		    (elements d "img")))
 
 (defn img-area [i]
-  (apply * (:size i)))
+  (let [s (:size i)]
+  (* (:width s) (:height s))))
 
-(defn big-img [images]
+(defn big-img
+[images]
   ;;discard images with no size information.
   (let [is (filter :size images)]
 	(max-by img-area is)))
@@ -121,8 +123,13 @@
 (defn big-div [d]
   (max-by (comp count :textContent bean) (extract-all d)))
 
+(defn at-least [min imgs]
+  (filter #(> (img-area %) min) imgs))
+
+;; TODO: better way of dealing with min size.  should really be composed more like classifiers, but let's leave it flat and lame until we figure out more about what we really need to do.
+
 (defn best-img
-  [u content]
+  [u content & [min]]
   (let [d (dom content)
 	;;first try to get the images out of the core body div.
 	core-imgs (imgs (readability-div d))
@@ -131,8 +138,9 @@
 		      core-imgs
 		      (imgs d))
 	eis (expand-relative-urls u target-imgs)
-	;;ensure we have sizees for all images.
-	sizes (fetch-sizes eis)]
+	;;ensure we have sizes for all images.
+	sized (fetch-sizes eis)
+	sizes (if min (at-least min sized) sized)]
     (if (empty? sizes) nil
 	;;take the first image we find that has no follow image that is larger than twice it's size.
 	(reduce (fn [best next]
@@ -143,10 +151,10 @@
 		sizes))))
 
 (defn best-img-at
-  [u]
-  (best-img u (:body (cl/get u))))
+  [u & [min]]
+  (best-img u (:body (cl/get u)) min))
 
-(defn with-best-img [m url-key content-key]
+(defn with-best-img [m url-key content-key & [min]]
   (let [img (try
 	      (best-img (url-key m)
 			(content-key m))
