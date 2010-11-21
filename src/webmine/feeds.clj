@@ -304,27 +304,41 @@
    that are marked as rss/xml/atom in the link type or if
    any link has rss xml or  "
   [page]
-  (let [d (-> page body-str dom)]    
+  ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
+  (let [d (-> page header-str dom)
+	first-attempt
+	;; sometimes rss feeds are marked as
+	;; <link type="application/rss+xml">
+	(when-let [all-links (elements d "link")]
+	  (for [l all-links
+		:when l
+		:let [attr (attr-map l)
+		      #^String type (:type attr)
+		      #^String link (->> attr :href (fix-link (str page)))]
+		:when (and link
+			   type
+			   (or (.contains type "rss")
+			       (.contains type "atom"))) ]
+	    link))
+
+;;most of the search urls are of the form:
+;;<link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="FriendFeed Search"/>
+
+;;specificly, they type="application/opensearchdescription+xml".  We can filter these out below, but first let's see how often we get a good feed if we ignore the fallback case and take only feeds in the header and identified by the standard.
+
+	;;if we didn't get anything on the first attempt, get all links in head and see if we can find an rss link.
+	;; all-feeds (if (not (empty? first-attempt))
+	;; 	    first-attempt
+		    
+	;; 	    (when-let [head-links (-> d head links-from-dom)]
+	;; 	      (->> head-links
+	;; 		   (map (partial fix-link (str page)))
+	;; 		   (filter #(and (not (comment? %)) (rss-suffix? %))))))
+	]
+
     (into #{}	  
-    (filter identity #_(comp feed? url)
-	    (concat
-	     ;; sometimes rss feeds are marked as
-	     ;; <link type="application/rss+xml">
-	     (when-let [all-links (elements d "link")]
-	       (for [l all-links
-		     :when l
-		     :let [attr (attr-map l)
-			   #^String type (:type attr)
-			   #^String link (->> attr :href (fix-link (str page)))]
-		     :when (and link
-			        type
-				(or (.contains type "rss") (.contains type "atom"))) ]
-		 link))
-	     ;;most sites go with the standard that the rss or atom feed is in the head
-	     (when-let [head-links (-> d head links-from-dom)]
-	       (->> head-links
-		    (map (partial fix-link (str page)))
-		    (filter #(and (not (comment? %)) (rss-suffix? %))))))))))
+	  (filter identity #_(comp feed? url) first-attempt))))
+
 
 (def canonical-feed (comp min-length host-rss-feeds))
 

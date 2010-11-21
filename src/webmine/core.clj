@@ -23,6 +23,10 @@
   (try (:body (client/get (str u)))
        (catch java.lang.Exception _ nil)))
 
+(defn header-str [u]
+  (try (:body (client/get (str u)))
+       (catch java.lang.Exception _ nil)))
+
 ;; From l.core
 (defn min-length [us]
   (min-by (comp count str) us))
