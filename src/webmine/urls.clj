@@ -1,9 +1,10 @@
 (ns webmine.urls
-  (:use [webmine.core])
-  (:require  [work.core :as work])
+  (:require [work.core :as work])
+  (:use [webmine.core]
+        [plumbing.core :only [maybe-comp]])
   (:import (java.net URL InetAddress
                      MalformedURLException UnknownHostException
-		     HttpURLConnection Proxy)))
+                     HttpURLConnection Proxy)))
 
 (defn url
   "Creates a URL. Returns nil if the url specifies and unkown protocol."

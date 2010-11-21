@@ -5,18 +5,17 @@
   are having issues and they ahve a few more error cases handled."}
   webmine.parser
   (:require [clojure.contrib.seq-utils :as seq])
-  (:use
-    clojure.xml
-    webmine.core
-    webmine.urls)
-  (:import
-    java.io.StringReader
-    org.ccil.cowan.tagsoup.Parser
-    (org.w3c.dom Node Document Element)
-    (org.xml.sax XMLReader InputSource)
-    (javax.xml.transform Transformer TransformerFactory)
-    javax.xml.transform.sax.SAXSource
-    javax.xml.transform.dom.DOMResult))
+  (:use clojure.xml
+        webmine.core
+        webmine.urls
+        [plumbing.core :only [maybe-comp]])
+  (:import java.io.StringReader
+           org.ccil.cowan.tagsoup.Parser
+           (org.w3c.dom Node Document Element)
+           (org.xml.sax XMLReader InputSource)
+           (javax.xml.transform Transformer TransformerFactory)
+           javax.xml.transform.sax.SAXSource
+           javax.xml.transform.dom.DOMResult))
 
 (defn dom [source]
   "html string -> dom using TagSoup.
