@@ -146,6 +146,15 @@
      ;; author
      (get-text :author))))
 
+(defn root-> [source f]
+  (try
+    (when-let [root (-> source parse zip/xml-zip)]
+      (f root))
+    (catch Exception e
+      (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
+	  (.printStackTrace e)
+	  nil))))
+
 (defn feed-meta [root]
   {:title
    (xml-zip/xml1-> root :channel :title xml-zip/text)
@@ -155,27 +164,18 @@
    (xml-zip/xml1-> root :channel :link xml-zip/text)})
 
 (defn parse-feed-meta [source]
-  (try
-    (when-let [root (-> source parse zip/xml-zip)]
-      (Feed.
-         ; title
-         (xml-zip/xml1-> root :channel :title xml-zip/text)
-	 ; desc (cription)
-         (xml-zip/xml1-> root :channel :description xml-zip/text)
-	 ; link
-	 (xml-zip/xml1-> root :channel :link xml-zip/text)
-	 ; entries
-	 (doall
-	   (for [n (xml-zip/xml-> root :channel :item zip/node)
-		 :let [entry (into {}
-				   (filter second
-					   (item-node-to-entry n)))]]
-	     entry))))
-    (catch Exception e
-      (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
-	  (.printStackTrace e)
-	  nil))))
+  (root-> source feed-meta))
 
+(defn feed-entries [root]
+  (doall
+   (for [n (xml-zip/xml-> root :channel :item zip/node)
+	 :let [entry (into {}
+			   (filter second
+				   (item-node-to-entry n)))]]
+     entry)))
+
+(defn parse-entries [source]
+  (root-> source feed-entries))
 
 (defn parse-feed [source]
   "returns record Feed representing a snapshot of a feed. Supports keys
@@ -183,26 +183,11 @@
   :des Description of feed
   :link link to feed
   :entries seq of Entry records, see doc below for entries"
-  (try
-    (when-let [root (-> source parse zip/xml-zip)]
-      (Feed.
-         ; title
-         (xml-zip/xml1-> root :channel :title xml-zip/text)
-	 ; desc (cription)
-         (xml-zip/xml1-> root :channel :description xml-zip/text)
-	 ; link
-	 (xml-zip/xml1-> root :channel :link xml-zip/text)
-	 ; entries
-	 (doall
-	   (for [n (xml-zip/xml-> root :channel :item zip/node)
-		 :let [entry (into {}
-				   (filter second
-					   (item-node-to-entry n)))]]
-	     entry))))
-    (catch Exception e
-      (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
-	  (.printStackTrace e)
-	  nil))))
+  (root-> source
+	  (fn [root]
+	    (let [{t :title d :des l :link} (feed-meta root)
+		  es (feed-entries root) ]
+      (Feed. t d l es)))))
 
 (defn entries [source]
   "
@@ -217,19 +202,14 @@
   :author author string
   :content Content of entry (or :description if not content)
   :link Link to content. "
-  (try
-    (let [res (->  source
-		   parse-feed
-		   :entries)]
-      ;;turn records into maps
-      (map (partial into {}) res))
-    (catch Exception e
-      (log/error (format "Error processing source %s" source))
-      (.printStackTrace e)
-      nil)))
+  (if-let [es (parse-entries source)]
+    (map (partial into {}) es)))
 
 (defn fetch-entries [u]
   (-> u url input-stream entries))
+
+(defn fetch-feed-meta [u]
+  (-> u url input-stream parse-feed-meta))
 
 (defn extract-entries [body]
   (-> body (.getBytes "UTF-8")
