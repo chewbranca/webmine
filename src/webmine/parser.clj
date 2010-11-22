@@ -89,12 +89,12 @@
    (count (divs (dom (:body (fetch (url \"http://ftalphaville.ft.com/\")))))) -> 199"
   [p #^String t]
   
-  (let [shitty-data-structure (condp #(isa? %2 %1) (class p)
-                                Document (.getElementsByTagName ^Document p t)
-                                Element (.getElementsByTagName ^Element p t))]
-    (filter identity
-	    (for [i (range 0 (.getLength shitty-data-structure))]
-	      (.item shitty-data-structure (int i))))))
+  (when p(let [shitty-data-structure (condp #(isa? %2 %1) (class p)
+				 Document (.getElementsByTagName ^Document p t)
+				 Element (.getElementsByTagName ^Element p t))]
+     (filter identity
+	     (for [i (range 0 (.getLength shitty-data-structure))]
+	       (.item shitty-data-structure (int i)))))))
 
 (defn strip-from-dom
   [#^Document d es]
