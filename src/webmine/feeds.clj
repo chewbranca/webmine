@@ -146,6 +146,37 @@
      ;; author
      (get-text :author))))
 
+(defn feed-meta [root]
+  {:title
+   (xml-zip/xml1-> root :channel :title xml-zip/text)
+   :des
+   (xml-zip/xml1-> root :channel :description xml-zip/text)
+   :link
+   (xml-zip/xml1-> root :channel :link xml-zip/text)})
+
+(defn parse-feed-meta [source]
+  (try
+    (when-let [root (-> source parse zip/xml-zip)]
+      (Feed.
+         ; title
+         (xml-zip/xml1-> root :channel :title xml-zip/text)
+	 ; desc (cription)
+         (xml-zip/xml1-> root :channel :description xml-zip/text)
+	 ; link
+	 (xml-zip/xml1-> root :channel :link xml-zip/text)
+	 ; entries
+	 (doall
+	   (for [n (xml-zip/xml-> root :channel :item zip/node)
+		 :let [entry (into {}
+				   (filter second
+					   (item-node-to-entry n)))]]
+	     entry))))
+    (catch Exception e
+      (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
+	  (.printStackTrace e)
+	  nil))))
+
+
 (defn parse-feed [source]
   "returns record Feed representing a snapshot of a feed. Supports keys
   :title Name of feed
@@ -314,7 +345,8 @@
 		:when l
 		:let [attr (attr-map l)
 		      #^String type (:type attr)
-		      #^String link (->> attr :href (fix-link (str page)))]
+		      #^String link (->> attr :href
+					 (fix-link (host-url (str page))))]
 		:when (and link
 			   type
 			   (or (.contains type "rss")

@@ -49,6 +49,8 @@
 	(or (.getHeaderField conn "Location")
 	    u)))
 
+;;http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener
+
 (defn content-type [u]
 ;using proxy may increase latency
   (with-http-conn [conn u]
