@@ -8,10 +8,10 @@
   (:use clojure.xml
         webmine.core
         webmine.urls
-        [plumbing.core :only [maybe-comp]])
+        [plumbing.core :only [ToSeqable to-seq maybe-comp]])
   (:import java.io.StringReader
            org.ccil.cowan.tagsoup.Parser
-           (org.w3c.dom Node Document Element)
+           (org.w3c.dom Node Document Element NodeList)
            (org.xml.sax XMLReader InputSource)
            (javax.xml.transform Transformer TransformerFactory)
            javax.xml.transform.sax.SAXSource
@@ -84,17 +84,27 @@
   (if-let [link (href n)]
     link ""))
 
+(extend-protocol  ToSeqable
+  org.w3c.dom.NodeList
+  (to-seq [this]
+       (for [i (range 0 (.getLength this))]
+	 (.item this (int i)))))
+
 (defn elements
   "gets the elements of a certian name in the dom
    (count (divs (dom (:body (fetch (url \"http://ftalphaville.ft.com/\")))))) -> 199"
-  [p #^String t]
-  
-  (when p(let [shitty-data-structure (condp #(isa? %2 %1) (class p)
-				 Document (.getElementsByTagName ^Document p t)
-				 Element (.getElementsByTagName ^Element p t))]
-     (filter identity
-	     (for [i (range 0 (.getLength shitty-data-structure))]
-	       (.item shitty-data-structure (int i)))))))
+  [p ^String t]
+  (when p
+    (let [node-list (condp #(isa? %2 %1) (class p)
+		      Document (.getElementsByTagName ^Document p t)
+		      Element (.getElementsByTagName ^Element p t))]
+      (filter identity (to-seq node-list)))))
+
+(defn children
+  "children of current node"
+  [^Node n]
+  (to-seq (.getChildNodes n)))
+
 
 (defn strip-from-dom
   [#^Document d es]

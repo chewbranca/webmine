@@ -7,6 +7,7 @@
         webmine.parser
         webmine.urls
         mochi.nlp.process.sent-splitter
+	[plumbing.core]
         [clojure.java.io :only [input-stream]])
   (:require [work.core :as work]
             [clojure.zip :as zip]
@@ -47,24 +48,21 @@
   (first
    (concat
     (for [#^SimpleDateFormat sdf rfc822-rss-formats
-	  :let [d (try
-		    (.parse sdf (.trim s) (ParsePosition. 0))
-		    (catch Exception _ nil))]
+	  :let [d (try-silent
+		    (.parse sdf (.trim s) (ParsePosition. 0)))]
 	  :when d]
       (-> d time-coerce/from-date time-coerce/to-string))
     (for [fmt (vals time-fmt/formatters)
-	  :let [d (try
-		    (time-fmt/parse fmt s)
-		    (catch Exception _ nil))]
+	  :let [d (try-silent (time-fmt/parse fmt s))]
 	  :when d] (-> d time-coerce/to-string)))))
 
-;;TODO better way?
 (defn to-char [s] (.charAt s 0))
 
 (defn period? [c] (= (to-char ".") c))
 
 (defn count-sentences [s]
   (count (filter period? s)))
+
 
 ;;TODO: AB against sentence text-only approach below
 (defn sentences-from-ptags
@@ -105,10 +103,8 @@
 (defn fetch-body
   "Takes an entry.  assocs' in the body of the link."
   [e]
-  (try
-   (assoc e :body
-	      (:body (http/get (:link e))))
-   (catch java.lang.Exception _ e)))
+  (assoc e :body
+	 (:body (http/get (:link e)))))
 
 (defrecord Feed [title des link entries])
 
@@ -123,6 +119,12 @@
 
 (defn complete-entry [e]
   (-> e fetch-body with-text with-des with-image))
+
+(defn- root-> [source f]
+  (when-let [root (-> source parse zip/xml-zip)]
+    (f root)))
+
+;; RSS 
 
 (defn- item-node-to-entry [item]
   (let [item-root (zip/xml-zip item)
@@ -139,23 +141,13 @@
      (first (filter identity
 		    (map get-text [:description :content :content:encoded])))
      ;; date
-     (try (first (for [k [:pubDate :date :updatedDate :dc:date]
+     (try-silent (first (for [k [:pubDate :date :updatedDate :dc:date]
 		       :let [s (get-text k)]
-		       :when s] (compact-date-time s)))
-	  (catch Exception e (log/error e)))
+		       :when s] (compact-date-time s))))
      ;; author
      (get-text :author))))
 
-(defn root-> [source f]
-  (try
-    (when-let [root (-> source parse zip/xml-zip)]
-      (f root))
-    (catch Exception e
-      (do (println (format "ERROR: Couldn't parse %s, returning nil" source))
-	  (.printStackTrace e)
-	  nil))))
-
-(defn feed-meta [root]
+(defn- feed-meta [root]
   {:title
    (xml-zip/xml1-> root :channel :title xml-zip/text)
    :des
@@ -163,21 +155,23 @@
    :link
    (xml-zip/xml1-> root :channel :link xml-zip/text)})
 
-(defn parse-feed-meta [source]
+(defn- parse-feed-meta [source]
   (root-> source feed-meta))
 
-(defn feed-entries [root]
-  (doall
-   (for [n (xml-zip/xml-> root :channel :item zip/node)
-	 :let [entry (into {}
-			   (filter second
-				   (item-node-to-entry n)))]]
-     entry)))
+(defn- feed-entries [root]
+  (let [get-items (fn [k] (xml-zip/xml-> root :channel k zip/node))
+	 nodes (find-first (complement empty?)
+			   [(get-items :item) (get-items :entry)])]
+    (for [n nodes
+	  :let [entry (into {}
+			    (filter second
+				    (item-node-to-entry n)))]]
+      entry)))
 
-(defn parse-entries [source]
+(defn- parse-entries [source]
   (root-> source feed-entries))
 
-(defn parse-feed [source]
+(defn- parse-rss [source]
   "returns record Feed representing a snapshot of a feed. Supports keys
   :title Name of feed
   :des Description of feed
@@ -187,9 +181,42 @@
 	  (fn [root]
 	    (let [{t :title d :des l :link} (feed-meta root)
 		  es (feed-entries root) ]
-      (Feed. t d l es)))))
+	      (Feed. t d l es)))))
 
-(defn entries [source]
+;; Atom
+
+(defn- rome-entry-as-map [e]
+   (into {} (map #(if (nil? (second %)) [(first %) ""] %)
+   {:date (-> e  .getPublishedDate time-coerce/from-date time-coerce/to-string )
+    :author (.getAuthor e)
+    :title (.getTitle e)
+    :link (.getLink e)
+    :des  (-?> e .getDescription .getValue)
+    :content (-?>> e .getContents
+		   (map #(.getValue %))
+		   (apply str))})))
+
+(defn- parse-atom [source]
+  (try-silent
+   (let [synd-feed (.build (SyndFeedInput.) (XmlReader. source))]
+     {:title (.getTitle synd-feed)
+      :des (.getDescription synd-feed)
+      :link (.getTitle synd-feed)
+      :entries (map rome-entry-as-map (.getEntries synd-feed))})))
+
+(defn- parse-feed [url]
+  (let [source (slurp url)
+	to-is #(-> source (.getBytes "UTF-8") java.io.ByteArrayInputStream.)
+	root (-> (to-is)		 		 
+		 parse
+		 zip/xml-zip)]
+    (cond
+     (xml-zip/xml1-> root :channel) (-> (to-is) parse-rss)
+     (xml-zip/xml-> root :entry) (-> (to-is) parse-atom)
+     :default
+       (RuntimeException. "Unknown feed format"))))
+
+(defn- entries [source]
   "
   takes a string or inputstream
   return seq of entries from rss feed source.
@@ -208,7 +235,7 @@
 (defn fetch-entries [u]
   (-> u url input-stream entries))
 
-(defn fetch-feed-meta [u]
+(defn- fetch-feed-meta [u]
   (-> u url input-stream parse-feed-meta))
 
 (defn extract-entries [body]

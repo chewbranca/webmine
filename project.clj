@@ -5,6 +5,7 @@
                  [org.clojure/clojure-contrib "1.2.0"]
                  [xerces/xercesImpl "2.9.1"]
                  [clj-sys/tagsoup "1.3-SNAPSHOT"]
+		 [clj-serializer "0.1.1"]
                  [xalan "2.7.1"]
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
