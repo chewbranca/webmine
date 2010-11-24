@@ -147,11 +147,14 @@
      ;; author
      (get-text :author))))
 
+;;TODO: add full spec and stuff people use: like language and avatar image.
 (defn- feed-meta [root]
   {:title
    (xml-zip/xml1-> root :channel :title xml-zip/text)
    :des
    (xml-zip/xml1-> root :channel :description xml-zip/text)
+   :gen
+   (xml-zip/xml1-> root :channel :generator xml-zip/text)
    :link
    (xml-zip/xml1-> root :channel :link xml-zip/text)})
 
@@ -235,7 +238,7 @@
 (defn fetch-entries [u]
   (-> u url input-stream entries))
 
-(defn- fetch-feed-meta [u]
+(defn fetch-feed-meta [u]
   (-> u url input-stream parse-feed-meta))
 
 (defn extract-entries [body]
