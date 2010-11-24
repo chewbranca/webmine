@@ -176,9 +176,8 @@
   :entries seq of Entry records, see doc below for entries"
   (root-> source
 	  (fn [root]
-	    (let [{t :title d :des l :link} (feed-meta root)
-		  es (feed-entries root) ]
-	      (Feed. t d l es)))))
+	    (let [{t :title d :des l :link} (feed-meta root)]
+	      (Feed. t d l (feed-entries root))))))
 
 ;; Atom
 
@@ -235,11 +234,11 @@
 (defn fetch-entries [u]
   (-> u url entries))
 
-(defn- fetch-feed-meta [u]
-  (-> u url input-stream parse-feed-meta))
+(defn fetch-feed-meta [u]
+  (-> u url parse-feed (dissoc :entries)))
 
-;; (defn extract-entries [body]
-;;   (-> body entries))
+(defn extract-entries [body]
+  (-> body entries))
 
 (defn feed? [item]
   (and item
