@@ -238,7 +238,7 @@
   (-> u url parse-feed (dissoc :entries)))
 
 (defn extract-entries [body]
-  (-> body entries))
+  (-> body parse-feed))
 
 (defn feed? [item]
   (and item
