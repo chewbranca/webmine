@@ -118,7 +118,8 @@
   (extract-content (:body e))))
 
 (defn complete-entry [e]
-  (-> e fetch-body with-text with-des with-image))
+  (try-update e
+   (comp with-image with-des with-text fetch-body)))
 
 (defn- root-> [source f]
   (when-let [root (-> source parse zip/xml-zip)]
@@ -374,7 +375,6 @@
 
     (into #{}	  
 	  (filter identity #_(comp feed? url) first-attempt))))
-
 
 (def canonical-feed (comp min-length host-rss-feeds))
 
