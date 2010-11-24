@@ -168,9 +168,6 @@
 				    (item-node-to-entry n)))]]
       entry)))
 
-(defn- parse-entries [source]
-  (root-> source feed-entries))
-
 (defn- parse-rss [source]
   "returns record Feed representing a snapshot of a feed. Supports keys
   :title Name of feed
@@ -187,7 +184,7 @@
 
 (defn- rome-entry-as-map [e]
    (into {} (map #(if (nil? (second %)) [(first %) ""] %)
-   {:date (-> e  .getPublishedDate time-coerce/from-date time-coerce/to-string )
+   {:date (-?> e  .getPublishedDate time-coerce/from-date time-coerce/to-string )
     :author (.getAuthor e)
     :title (.getTitle e)
     :link (.getLink e)
@@ -204,8 +201,11 @@
       :link (.getTitle synd-feed)
       :entries (map rome-entry-as-map (.getEntries synd-feed))})))
 
-(defn- parse-feed [url]
-  (let [source (slurp url)
+(defn- parse-feed [url-or-source]
+  (let [source (if (or (isa? (class url-or-source) java.net.URL)
+		       (.startsWith ^String url-or-source "http"))
+		 (slurp url-or-source)
+		 url-or-source)
 	to-is #(-> source (.getBytes "UTF-8") java.io.ByteArrayInputStream.)
 	root (-> (to-is)		 		 
 		 parse
@@ -216,7 +216,7 @@
      :default
        (RuntimeException. "Unknown feed format"))))
 
-(defn- entries [source]
+(defn- entries [url]
   "
   takes a string or inputstream
   return seq of entries from rss feed source.
@@ -229,19 +229,17 @@
   :author author string
   :content Content of entry (or :description if not content)
   :link Link to content. "
-  (if-let [es (parse-entries source)]
+  (when-let [es (-> url parse-feed :entries)]
     (map (partial into {}) es)))
 
 (defn fetch-entries [u]
-  (-> u url input-stream entries))
+  (-> u url entries))
 
 (defn- fetch-feed-meta [u]
   (-> u url input-stream parse-feed-meta))
 
-(defn extract-entries [body]
-  (-> body (.getBytes "UTF-8")
-	       input-stream
-	       entries))
+;; (defn extract-entries [body]
+;;   (-> body entries))
 
 (defn feed? [item]
   (and item
@@ -251,60 +249,60 @@
 (defn links-from-entry [e]
  (-> e :content url-seq))
 
-(defn map-to-entry [entry]
-  (let [content-keys (difference
-		      (into #{} (keys entry))
-		      #{:title :link :author :date :des})
-	content (map (fn [k]
-		       (let [v (entry k)]
-			 [k (.setValue (SyndContentImpl.) v)]))
-		     content-keys)]
-  (doto (SyndEntryImpl.)
-    (.setTitle (:title entry))
-    (.setLink (:link entry))
-    (.setAuthor (:author entry))
-    (.setPublishedDate (:date entry))
-    (.setDescription
-     (doto (SyndContentImpl.)
-       (.setType "text/html")
-       (.setValue  (:des entry)))))))
+;; (defn map-to-entry [entry]
+;;   (let [content-keys (difference
+;; 		      (into #{} (keys entry))
+;; 		      #{:title :link :author :date :des})
+;; 	content (map (fn [k]
+;; 		       (let [v (entry k)]
+;; 			 [k (.setValue (SyndContentImpl.) v)]))
+;; 		     content-keys)]
+;;   (doto (SyndEntryImpl.)
+;;     (.setTitle (:title entry))
+;;     (.setLink (:link entry))
+;;     (.setAuthor (:author entry))
+;;     (.setPublishedDate (:date entry))
+;;     (.setDescription
+;;      (doto (SyndContentImpl.)
+;;        (.setType "text/html")
+;;        (.setValue  (:des entry)))))))
 
-(defn feed-home [source]
- (if-let [synd-feed (parse-feed source)]
-    (:link synd-feed)))
+;; (defn feed-home [source]
+;;  (if-let [synd-feed (parse-feed source)]
+;;     (:link synd-feed)))
 
-(defn external?
-  "is the url from the same host as the home url?"
-  [home other]
-  (and home other
-       (not (= (.getHost other)
-	       (.getHost home)))))
+;; (defn external?
+;;   "is the url from the same host as the home url?"
+;;   [home other]
+;;   (and home other
+;;        (not (= (.getHost other)
+;; 	       (.getHost home)))))
 
-(def internal? (complement external?))
+;; (def internal? (complement external?))
 
-(defn external
-  "removes urls to the same host"
-  [home urls]
-  (filter #(external? (url home) %)
-	  urls))
+;; (defn external
+;;   "removes urls to the same host"
+;;   [home urls]
+;;   (filter #(external? (url home) %)
+;; 	  urls))
 
-(defn external-feed? [home other]
-  (and (external? home other)
-       (feed? other)))
+;; (defn external-feed? [home other]
+;;   (and (external? home other)
+;;        (feed? other)))
 
-(defn internal-feed? [home other]
-  (and (internal? home other)
-       (feed? other)))
+;; (defn internal-feed? [home other]
+;;   (and (internal? home other)
+;;        (feed? other)))
 
-;;TODO: refactor to a sinlge api - url, string url, etc.
-(defn find-outlinks
-"string (page body) -> url (blog homepage) -> outlinks"
-[s h]
-  (seq (into #{}
-	     (work/filter-work
-	      #(external? (url h) %)
-	      (url-seq s)
-	      20))))
+;; ;;TODO: refactor to a sinlge api - url, string url, etc.
+;; (defn find-outlinks
+;; "string (page body) -> url (blog homepage) -> outlinks"
+;; [s h]
+;;   (seq (into #{}
+;; 	     (work/filter-work
+;; 	      #(external? (url h) %)
+;; 	      (url-seq s)
+;; 	      20))))
 
 (defn comment? [u]
 (.contains (str u) "comments"))
@@ -390,50 +388,50 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 (seq (into #{} (work/map-work canonical-feed urls 20))))
 
 ;;TODO: parallelize
-(defn blogroll [opml]
-  (for [x (xml-seq (parse opml))
-        :when (= :outline (:tag x))
-	:let [a (:attrs x)
-	      u (or (:xmlUrl a) (:htmlUrl a))]
-	:when (url u)]
-    u))
+;; (defn blogroll [opml]
+;;   (for [x (xml-seq (parse opml))
+;;         :when (= :outline (:tag x))
+;; 	:let [a (:attrs x)
+;; 	      u (or (:xmlUrl a) (:htmlUrl a))]
+;; 	:when (url u)]
+;;     u))
 
-(defn find-feed-outlinks
-  "given the url of a blog's homepage, find the outlinks to feeds from the homepage."
-  [b u]
-  (let [outs (into #{}
-		   (find-outlinks b u))
-	feeds (filter
-	       identity
-	       (canonical-feeds outs))
-	;;we need to filter same host feeds again, as they can get filtered from outlinsk but then be found again when extracting canonical feeds.
-	ex-feeds (into #{} (filter #(external? (url u) (url %))
-				   feeds))]
-    (seq ex-feeds)))
+;; (defn find-feed-outlinks
+;;   "given the url of a blog's homepage, find the outlinks to feeds from the homepage."
+;;   [b u]
+;;   (let [outs (into #{}
+;; 		   (find-outlinks b u))
+;; 	feeds (filter
+;; 	       identity
+;; 	       (canonical-feeds outs))
+;; 	;;we need to filter same host feeds again, as they can get filtered from outlinsk but then be found again when extracting canonical feeds.
+;; 	ex-feeds (into #{} (filter #(external? (url u) (url %))
+;; 				   feeds))]
+;;     (seq ex-feeds)))
 
-(defn home-feed-outlinks
-  [u]
-  (find-feed-outlinks (body-str u) u))
+;; (defn home-feed-outlinks
+;;   [u]
+;;   (find-feed-outlinks (body-str u) u))
 
-(defn entry-feed-outlinks
-  "given the url of a blog's feed, find the outlinks to feeds from all the entries currently in this blog's feed."
-  [u]
-  (let [home (feed-home (url u))
-	uber-b (apply str (fetch-entries u))]
-    (find-feed-outlinks uber-b u)))
+;; (defn entry-feed-outlinks
+;;   "given the url of a blog's feed, find the outlinks to feeds from all the entries currently in this blog's feed."
+;;   [u]
+;;   (let [home (feed-home (url u))
+;; 	uber-b (apply str (fetch-entries u))]
+;;     (find-feed-outlinks uber-b u)))
 
-(defn feed-outlinks
-  "given the url of a blog's homepage or rss feed, find the outlinks to feeds from both the homepage, and all the entries currently in this blog's feed."
-  [u]
-  (let [h (feed-home (url u))
-	[home fd] (if h [h u]
-		      [u (canonical-feed u)])]
-    {:homepage [home (home-feed-outlinks home)]
-     :entries [fd (entry-feed-outlinks fd)]}))
+;; (defn feed-outlinks
+;;   "given the url of a blog's homepage or rss feed, find the outlinks to feeds from both the homepage, and all the entries currently in this blog's feed."
+;;   [u]
+;;   (let [h (feed-home (url u))
+;; 	[home fd] (if h [h u]
+;; 		      [u (canonical-feed u)])]
+;;     {:homepage [home (home-feed-outlinks home)]
+;;      :entries [fd (entry-feed-outlinks fd)]}))
 
-(defn merge-outlinks [outlinks-map]
-  (into #{} (concat (second (:entries outlinks-map))
-		    (second (:homepage outlinks-map)))))
+;; (defn merge-outlinks [outlinks-map]
+;;   (into #{} (concat (second (:entries outlinks-map))
+;; 		    (second (:homepage outlinks-map)))))
 
 (comment
   (use 'webmine.readability)
@@ -447,4 +445,6 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
   (fetch-entries "http://scripting.com/rss.xml")
   (fetch-entries "http://feeds.nytimes.com/nyt/rss/HomePage")
   (canonical-feed "http://io9.com/")
+  (fetch-entries "http://feeds.feedburner.com/oreilly/news")
+  (fetch-entries "http://feeds.feedburner.com/oreilly/news")
   (canonical-feed "http://www.huffingtonpost.com/"))
