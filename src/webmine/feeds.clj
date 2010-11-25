@@ -153,6 +153,12 @@
    (xml-zip/xml1-> root :channel :title xml-zip/text)
    :des
    (xml-zip/xml1-> root :channel :description xml-zip/text)
+   :gen
+   (xml-zip/xml1-> root :channel :generator xml-zip/text)
+   :lang
+   (xml-zip/xml1-> root :channel :language xml-zip/text)
+   :img
+   (xml-zip/xml1-> root :channel :image xml-zip/text)
    :link
    (xml-zip/xml1-> root :channel :link xml-zip/text)})
 
@@ -193,6 +199,8 @@
 		   (map #(.getValue %))
 		   (apply str))})))
 
+;;TODO:  make this case work: view-source:http://cityroom.blogs.nytimes.com/feed/
+;;use feed-
 (defn- parse-atom [source]
   (try-silent
    (let [synd-feed (.build (SyndFeedInput.) (XmlReader. source))]
