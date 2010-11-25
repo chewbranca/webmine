@@ -18,7 +18,8 @@
 
 (deftest find-best-img
   (is (= {:url "https://docs.google.com/File?id=dhhw653p_848g39gd9gx_b",
-	  :size {:width 640, :height 480}}
+	  :size {:width 640, :height 480}
+	  :content-size 86182}
 	  (best-img-at
 "http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html")))
   (is (= nil (best-img-at "http://alexisohanian.com/fantastic-advice-on-why-its-better-to-be-hard" 10000))))

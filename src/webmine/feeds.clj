@@ -29,6 +29,10 @@
            [java.text
             SimpleDateFormat ParsePosition]))
 
+;;
+;; Date Stuff
+;;
+
 (def rfc822-rss-formats
      (map #(SimpleDateFormat. %)
 	  ["E, dd MMM yy HH:mm:ss Z"
@@ -56,13 +60,16 @@
 	  :let [d (try-silent (time-fmt/parse fmt s))]
 	  :when d] (-> d time-coerce/to-string)))))
 
+;; 
+;; Sentence Parsing
+;;
+
 (defn to-char [s] (.charAt s 0))
 
 (defn period? [c] (= (to-char ".") c))
 
 (defn count-sentences [s]
   (count (filter period? s)))
-
 
 ;;TODO: AB against sentence text-only approach below
 (defn sentences-from-ptags
@@ -110,6 +117,10 @@
 
 (defrecord FeedEntry [title link content des date author])
 
+;;
+;; Entry Supplements: Text, Image
+;;
+
 (defn with-image [e]
   (imgs/with-best-img e :link :body))
 
@@ -119,15 +130,17 @@
 
 (defn complete-entry [e]
   (try-update e
-   (comp with-image with-des with-text fetch-body)))
+   (comp with-image with-des with-text)))
 
 (defn- root-> [source f]
   (when-let [root (-> source parse zip/xml-zip)]
     (f root)))
 
-;; RSS 
+;;
+;; RSS
+;;
 
-(defn- item-node-to-entry [item]
+(defn- rss-item-node-to-entry [item]
   (let [item-root (zip/xml-zip item)
         get-text (fn [k] (xml-zip/xml1-> item-root k xml-zip/text))]
     (FeedEntry.
@@ -148,7 +161,7 @@
      ;; author
      (get-text :author))))
 
-(defn- feed-meta [root]
+(defn- rss-feed-meta [root]
   {:title
    (xml-zip/xml1-> root :channel :title xml-zip/text)
    :des
@@ -162,65 +175,76 @@
    :link
    (xml-zip/xml1-> root :channel :link xml-zip/text)})
 
-(defn- parse-feed-meta [source]
-  (root-> source feed-meta))
-
-(defn- feed-entries [root]
+(defn- rss-feed-entries [root]
   (let [get-items (fn [k] (xml-zip/xml-> root :channel k zip/node))
 	 nodes (find-first (complement empty?)
 			   [(get-items :item) (get-items :entry)])]
     (for [n nodes
 	  :let [entry (into {}
 			    (filter second
-				    (item-node-to-entry n)))]]
+				    (rss-item-node-to-entry n)))]]
       entry)))
 
-(defn- parse-rss [source]
+(defn- parse-rss [root]
   "returns record Feed representing a snapshot of a feed. Supports keys
   :title Name of feed
   :des Description of feed
   :link link to feed
   :entries seq of Entry records, see doc below for entries"
-  (root-> source
-	  (fn [root]
-	    (let [{t :title d :des l :link} (feed-meta root)]
-	      (Feed. t d l (feed-entries root))))))
+  (let [{t :title d :des l :link} (rss-feed-meta root)]
+	      (Feed. t d l (rss-feed-entries root))))
 
+;;
 ;; Atom
+;;
 
-(defn- rome-entry-as-map [e]
-   (into {} (map #(if (nil? (second %)) [(first %) ""] %)
-   {:date (-?> e  .getPublishedDate time-coerce/from-date time-coerce/to-string )
-    :author (.getAuthor e)
-    :title (.getTitle e)
-    :link (.getLink e)
-    :des  (-?> e .getDescription .getValue)
-    :content (-?>> e .getContents
-		   (map #(.getValue %))
-		   (apply str))})))
+(defn- atom-item-node-to-entry [node]
+  {:date (find-first
+	  (map
+	   (fn [k] (-> (xml-zip/xml1-> node k xml-zip/text)
+		       compact-date-time))
+	   [:updated]))
+   :author (xml-zip/xml1-> node :author :name xml-zip/text)
+   :title (xml-zip/xml1-> node :title xml-zip/text)
+   :link (xml-zip/xml1-> node :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))
+   :content (xml-zip/xml1-> node :summary xml-zip/text)})
+  
 
+(defn- atom-feed-meta [root]
+  {:title
+   (xml-zip/xml1-> root  :title xml-zip/text)
+   :des
+   (xml-zip/xml1-> root :subtitle  xml-zip/text)
+   :gen
+   (xml-zip/xml1-> root :generator xml-zip/text)
+   :lang
+   (xml-zip/xml1-> root :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :hreflang))
+   :img
+   (xml-zip/xml1-> root  :image xml-zip/text)
+   :link
+   (xml-zip/xml1-> root :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))})
+  
 ;;TODO:  make this case work: view-source:http://cityroom.blogs.nytimes.com/feed/
 ;;use feed-
-(defn- parse-atom [source]
-  (try-silent
-   (let [synd-feed (.build (SyndFeedInput.) (XmlReader. source))]
-     {:title (.getTitle synd-feed)
-      :des (.getDescription synd-feed)
-      :link (.getTitle synd-feed)
-      :entries (map rome-entry-as-map (.getEntries synd-feed))})))
+(defn- parse-atom [root]
+  (assoc (atom-feed-meta root)
+    :entries (map atom-item-node-to-entry (xml-zip/xml-> root :entry))))
+
+;;
+;; Feed (RSS or ATOM)
+;;
 
 (defn- parse-feed [url-or-source]
   (let [source (if (or (isa? (class url-or-source) java.net.URL)
                        (.startsWith ^String url-or-source "http"))
                  (slurp url-or-source)
                  url-or-source)
-        to-is #(-> source (.getBytes "UTF-8") java.io.ByteArrayInputStream.)
-        root (-> (to-is)		 		 
+        root (-> ^String source (.getBytes "UTF-8") java.io.ByteArrayInputStream.
                  parse
                  zip/xml-zip)]
     (cond
-     (xml-zip/xml1-> root :channel) (-> (to-is) parse-rss)
-     (xml-zip/xml-> root :entry) (-> (to-is) parse-atom)
+     (xml-zip/xml1-> root :channel) (parse-rss root)
+     (xml-zip/xml-> root :entry) (parse-atom root)
      :default
      (RuntimeException. "Unknown feed format"))))
 
@@ -275,66 +299,48 @@
 ;;        (.setType "text/html")
 ;;        (.setValue  (:des entry)))))))
 
-;; (defn feed-home [source]
-;;  (if-let [synd-feed (parse-feed source)]
-;;     (:link synd-feed)))
+(defn feed-home [source]
+ (if-let [synd-feed (parse-feed source)]
+    (:link synd-feed)))
 
-;; (defn external?
-;;   "is the url from the same host as the home url?"
-;;   [home other]
-;;   (and home other
-;;        (not (= (.getHost other)
-;; 	       (.getHost home)))))
+(defn external?
+  "is the url from the same host as the home url?"
+  [home other]
+  (and home other
+       (not (= (.getHost other)
+	       (.getHost home)))))
 
-;; (def internal? (complement external?))
+(def internal? (complement external?))
 
-;; (defn external
-;;   "removes urls to the same host"
-;;   [home urls]
-;;   (filter #(external? (url home) %)
-;; 	  urls))
+(defn external
+  "removes urls to the same host"
+  [home urls]
+  (filter #(external? (url home) %)
+	  urls))
 
-;; (defn external-feed? [home other]
-;;   (and (external? home other)
-;;        (feed? other)))
+(defn external-feed? [home other]
+  (and (external? home other)
+       (feed? other)))
 
-;; (defn internal-feed? [home other]
-;;   (and (internal? home other)
-;;        (feed? other)))
+(defn internal-feed? [home other]
+  (and (internal? home other)
+       (feed? other)))
 
 ;; ;;TODO: refactor to a sinlge api - url, string url, etc.
-;; (defn find-outlinks
-;; "string (page body) -> url (blog homepage) -> outlinks"
-;; [s h]
-;;   (seq (into #{}
-;; 	     (work/filter-work
-;; 	      #(external? (url h) %)
-;; 	      (url-seq s)
-;; 	      20))))
+
 
 (defn comment? [u]
-(.contains (str u) "comments"))
+  (.contains (str u) "comments"))
 
-;;TODO: invert to make mroe efficient with and.
-;;also could invert conditional to be only .xml, /, or nothing
-(defn rss-suffix? [u]
+(defn rss-suffix?
+  "does the url encode a possible rss or atom suffix"
+  [u]
   (let [u (str u)]
     (and (or (.contains u "xml")
 	     (.contains u "rss")
 	     (.contains u "atom")
 	     #_(.matches u "^.*/[^/.]*$"))
 	 (not (.endsWith u "xmlrpc.php")))))
-;; (let [su (str u)
-;; 	l (.length su)
-;; 	drop (= "/" (.charAt su (- l 1)))
-;; 	u* (if (not drop) su (subs su 0 (- l 1)))]
-;; 	(not (or (.endsWith u* ".com")
-;; 	    (.endsWith u* ".html")
-;; 	    (.endsWith u* ".php")
-;; 	    (.endsWith u* ".png")
-;; 	    (.endsWith u* ".ico")
-;; 	    (.endsWith u* ".txt")
-;; 	    (.endsWith u* ".txt"))))
 
 (defn- fix-link
   "fix absolute links"
@@ -384,64 +390,74 @@
     (into #{}	  
 	  (filter identity #_(comp feed? url) first-attempt))))
 
-(def canonical-feed (comp min-length host-rss-feeds))
-
-(defn canonical-feeds
-"
-Avoid subscribing to multiple feeds on the same blog.
+(def ^{:doc "Avoid subscribing to multiple feeds on the same blog.
 Initial heuristic is to take url with min length.
-May not be a good idea for blogs that have many useful feeds, for example, for a news site like huffington post."
-[urls]
-(seq (into #{} (work/map-work canonical-feed urls 20))))
+May not be a good idea for blogs that have many useful feeds, for example, for a news site like huffington post."}
+     canonical-feed (comp min-length host-rss-feeds))
+
+;;
+;; Feed outlink crawling
+;;
+
+(defn find-outlinks
+"string (page body) -> url (blog homepage) -> outlinks"
+[s h]
+  (seq (into #{}
+	     (work/filter-work
+	      #(external? (url h) %)
+	      (url-seq s)
+	      20))))
 
 ;;TODO: parallelize
-;; (defn blogroll [opml]
-;;   (for [x (xml-seq (parse opml))
-;;         :when (= :outline (:tag x))
-;; 	:let [a (:attrs x)
-;; 	      u (or (:xmlUrl a) (:htmlUrl a))]
-;; 	:when (url u)]
-;;     u))
+(defn blogroll [opml]
+  (for [x (xml-seq (parse opml))
+        :when (= :outline (:tag x))
+	:let [a (:attrs x)
+	      u (or (:xmlUrl a) (:htmlUrl a))]
+	:when (url u)]
+    u))
 
-;; (defn find-feed-outlinks
-;;   "given the url of a blog's homepage, find the outlinks to feeds from the homepage."
-;;   [b u]
-;;   (let [outs (into #{}
-;; 		   (find-outlinks b u))
-;; 	feeds (filter
-;; 	       identity
-;; 	       (canonical-feeds outs))
-;; 	;;we need to filter same host feeds again, as they can get filtered from outlinsk but then be found again when extracting canonical feeds.
-;; 	ex-feeds (into #{} (filter #(external? (url u) (url %))
-;; 				   feeds))]
-;;     (seq ex-feeds)))
+(defn find-feed-outlinks
+  "given the url of a blog's homepage, find the outlinks to feeds from the homepage."
+  [b u]
+  (let [outs (into #{}
+		   (find-outlinks b u))
+	feeds (filter
+	       identity
+	       (work/map-work canonical-feed outs 20))
+	;;we need to filter same host feeds again, as they can get filtered from outlinsk but then be found again when extracting canonical feeds.
+	ex-feeds (into #{} (filter #(external? (url u) (url %))
+				   feeds))]
+    (seq ex-feeds)))
 
-;; (defn home-feed-outlinks
-;;   [u]
-;;   (find-feed-outlinks (body-str u) u))
+(defn home-feed-outlinks
+  [u]
+  (find-feed-outlinks (body-str u) u))
 
-;; (defn entry-feed-outlinks
-;;   "given the url of a blog's feed, find the outlinks to feeds from all the entries currently in this blog's feed."
-;;   [u]
-;;   (let [home (feed-home (url u))
-;; 	uber-b (apply str (fetch-entries u))]
-;;     (find-feed-outlinks uber-b u)))
+(defn entry-feed-outlinks
+  "given the url of a blog's feed, find the outlinks to feeds from all the entries currently in this blog's feed."
+  [u]
+  (let [home (feed-home (url u))
+	uber-b (apply str (fetch-entries u))]
+    (find-feed-outlinks uber-b u)))
 
-;; (defn feed-outlinks
-;;   "given the url of a blog's homepage or rss feed, find the outlinks to feeds from both the homepage, and all the entries currently in this blog's feed."
-;;   [u]
-;;   (let [h (feed-home (url u))
-;; 	[home fd] (if h [h u]
-;; 		      [u (canonical-feed u)])]
-;;     {:homepage [home (home-feed-outlinks home)]
-;;      :entries [fd (entry-feed-outlinks fd)]}))
+(defn feed-outlinks
+  "given the url of a blog's homepage or rss feed, find the outlinks to feeds from both the homepage, and all the entries currently in this blog's feed."
+  [u]
+  (let [h (feed-home (url u))
+	[home fd] (if h [h u]
+		      [u (canonical-feed u)])]
+    {:homepage [home (home-feed-outlinks home)]
+     :entries [fd (entry-feed-outlinks fd)]}))
 
-;; (defn merge-outlinks [outlinks-map]
-;;   (into #{} (concat (second (:entries outlinks-map))
-;; 		    (second (:homepage outlinks-map)))))
+(defn merge-outlinks [outlinks-map]
+  (into #{} (concat (second (:entries outlinks-map))
+		    (second (:homepage outlinks-map)))))
 
 (comment
   (use 'webmine.readability)
+  (def es (fetch-entries "http://blog.fontdeck.com/rss"))
+  (first es)
   (fetch-entries "http://www.rollingstone.com/siteServices/rss/allNews")
   (compact-date-time "Sun, 31 Oct 2010 03:03:00 EDT")
   (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))

@@ -20,11 +20,10 @@
          (set (host-rss-feeds (url "http://www.huffingtonpost.com"))))))
 
 (deftest canonical-rss-feed
-  (is (= ["http://feeds.huffingtonpost.com/FeaturedPosts"]
-	 (canonical-feeds [(url "http://www.huffingtonpost.com")])))
-  (is (= ["http://feeds.huffingtonpost.com/FeaturedPosts"]
-	 (canonical-feeds [(url "http://www.huffingtonpost.com")
-			   (url "http://www.huffingtonpost.com")])))
+  (is (= "http://feeds.huffingtonpost.com/FeaturedPosts"
+	 (canonical-feed (url "http://www.huffingtonpost.com"))))
+  (is (= "http://feeds.huffingtonpost.com/FeaturedPosts"
+	 (canonical-feed (url "http://www.huffingtonpost.com"))))
   (is (= "http://feedproxy.google.com/TechCrunch"
 	 (canonical-feed "http://techcrunch.com/2010/11/20/no-palin-no-galin/")))
   (is (= nil

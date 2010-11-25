@@ -1,9 +1,11 @@
 (ns webmine.images
   (:require [clj-http.client :as cl])
-  (:use infer.core
+  (:use [infer.core :only [max-by]]
         webmine.urls
         webmine.readability
-        webmine.parser)
+        webmine.parser
+	plumbing.core)
+  (:require [work.core :as work])
   (:import javax.imageio.ImageIO)
   (:import java.awt.image.BufferedImage)
   (:import java.awt.image.ConvolveOp)
@@ -101,6 +103,15 @@
     {:width (.getWidth i)
      :height (.getHeight i)}))
 
+(defn img-content-size [^String u]
+  (or (-?> u
+	(.replaceAll " " "%20")
+	cl/head
+	:headers
+	(get "content-length")
+	Integer/parseInt)
+      0))
+
 (defn fetch-sizes [imgs]
   (map 
    (fn [i]
@@ -109,6 +120,15 @@
        (let [s (img-size (:url i))]
 	 (assoc i :size s))))     
    imgs))
+
+(defn fetch-content-sizes [imgs]
+  (work/map-work
+   (fn [i]
+     (if-let [s (:content-size i)]
+       i
+       (assoc i :content-size (img-content-size (:url i)))))
+   imgs
+   (count imgs)))
 
 ;;example usage
 ;;(big-img (fetch-sizes (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/"))))))
@@ -139,16 +159,18 @@
 		      (imgs d))
 	eis (expand-relative-urls u target-imgs)
 	;;ensure we have sizes for all images.
-	sized (fetch-sizes eis)
-	sizes (if min (at-least min sized) sized)]
-    (if (empty? sizes) nil
+	sized (fetch-content-sizes eis)
+	sizes (if min (filter (fn [i] (>= (:content-size i) min)) sized) sized)]
+    (when-not (empty? sizes) 
 	;;take the first image we find that has no follow image that is larger than twice it's size.
-	(reduce (fn [best next]
-		  (if (> (img-area next)
-			 (* (img-area best) 2))
-		    next
-		    best))
-		sizes))))
+      (when-let [best (reduce (fn [best next]
+				(if (> (:content-size next)
+				       (* (:content-size best) 2))
+				  next
+				  best))
+			      sizes)]
+	(assoc best
+	  :size (img-size (:url best)))))))
 
 (defn best-img-at
   [u & [min]]
@@ -228,4 +250,5 @@ returns the scaled image, retaining aspect ratio."
 
 (comment
   (best-img-at "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues")
+
 )
