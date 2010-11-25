@@ -203,18 +203,18 @@
 
 (defn- parse-feed [url-or-source]
   (let [source (if (or (isa? (class url-or-source) java.net.URL)
-		       (.startsWith ^String url-or-source "http"))
-		 (slurp url-or-source)
-		 url-or-source)
-	to-is #(-> source (.getBytes "UTF-8") java.io.ByteArrayInputStream.)
-	root (-> (to-is)		 		 
-		 parse
-		 zip/xml-zip)]
+                       (.startsWith ^String url-or-source "http"))
+                 (slurp url-or-source)
+                 url-or-source)
+        to-is #(-> source (.getBytes "UTF-8") java.io.ByteArrayInputStream.)
+        root (-> (to-is)		 		 
+                 parse
+                 zip/xml-zip)]
     (cond
      (xml-zip/xml1-> root :channel) (-> (to-is) parse-rss)
      (xml-zip/xml-> root :entry) (-> (to-is) parse-atom)
      :default
-       (RuntimeException. "Unknown feed format"))))
+     (RuntimeException. "Unknown feed format"))))
 
 (defn- entries [url]
   "
