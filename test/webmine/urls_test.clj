@@ -19,7 +19,7 @@
     "/foo" "http://google.com/foo"))
 
 (deftest test-host-by-ip
-  (is (nil? (host-by-ip (url "http://this-url-doesnt-exist-yet.com")))))
+  (is (host-by-ip (url "http://google.com"))))
 
 (deftest test-http?
   (is (http? (url "http://google.com")))

@@ -52,12 +52,12 @@
   (first
    (concat
     (for [#^SimpleDateFormat sdf rfc822-rss-formats
-	  :let [d (try-silent
-		    (.parse sdf (.trim s) (ParsePosition. 0)))]
+	  :let [d (silent
+		    #(.parse sdf (.trim s) (ParsePosition. 0)))]
 	  :when d]
       (-> d time-coerce/from-date time-coerce/to-string))
     (for [fmt (vals time-fmt/formatters)
-	  :let [d (try-silent (time-fmt/parse fmt s))]
+	  :let [d (silent #(time-fmt/parse fmt s))]
 	  :when d] (-> d time-coerce/to-string)))))
 
 ;; 
@@ -129,8 +129,7 @@
   (extract-content (:body e))))
 
 (defn complete-entry [e]
-  (try-update e
-   (comp with-image with-des with-text)))
+  (-x> e with-text with-des with-image))
 
 (defn- root-> [source f]
   (when-let [root (-> source parse zip/xml-zip)]
@@ -155,7 +154,7 @@
      (first (filter identity
 		    (map get-text [:description :content :content:encoded])))
      ;; date
-     (try-silent (first (for [k [:pubDate :date :updatedDate :dc:date]
+     (silent (first (for [k [:pubDate :date :updatedDate :dc:date]
 		       :let [s (get-text k)]
 		       :when s] (compact-date-time s))))
      ;; author
