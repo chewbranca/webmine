@@ -154,9 +154,9 @@
      (first (filter identity
 		    (map get-text [:description :content :content:encoded])))
      ;; date
-     (silent (first (for [k [:pubDate :date :updatedDate :dc:date]
-		       :let [s (get-text k)]
-		       :when s] (compact-date-time s))))
+     (first (for [k [:pubDate :date :updatedDate :dc:date]
+		  :let [s (get-text k)]
+		  :when s] (compact-date-time s)))
      ;; author
      (get-text :author))))
 
@@ -191,7 +191,7 @@
   :link link to feed
   :entries seq of Entry records, see doc below for entries"
   (let [{t :title d :des l :link} (rss-feed-meta root)]
-	      (Feed. t d l (rss-feed-entries root))))
+    (Feed. t d l (rss-feed-entries root))))
 
 ;;
 ;; Atom
@@ -469,4 +469,5 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
   (canonical-feed "http://io9.com/")
   (fetch-entries "http://feeds.feedburner.com/oreilly/news")
   (fetch-entries "http://feeds.feedburner.com/oreilly/news")
+  
   (canonical-feed "http://www.huffingtonpost.com/"))
