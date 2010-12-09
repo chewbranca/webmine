@@ -52,3 +52,11 @@
                  (url "http://www.readwriteweb.com")
                  (url "http://www.readwriteweb.com")
                  (url "http://blog.jasonmorton.com")]))))))
+
+(deftest test-expand-relative-url
+  (are [a r] (= a (expand-relative-url "http://foo.com/bar/baz" r))
+       "http://foo.com/moo" "/moo"
+       "http://foo.com/bar/moo" "moo")
+  (are [a r] (= a (expand-relative-url "https://foo.com/bar/baz" r))
+       "https://foo.com/moo" "/moo"
+       "https://foo.com/bar/moo" "moo"))

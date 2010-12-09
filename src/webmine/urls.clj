@@ -75,6 +75,7 @@
   (if-let [h (.getHost u)]
     (.toLowerCase h)))
 
+;; TODO: Remove http:// conversion, what about https?
 (defn host-url [u]
  ((maybe-comp
    url
@@ -82,6 +83,13 @@
    host
    url)
    u))
+
+(defn expand-relative-url
+  [ctx u]
+  (if (url u)
+    u
+    (let [ctx (url ctx)]
+      (str (java.net.URL. ctx u)))))
 
 (defn expand-relative-urls [h xs]
   (map 
