@@ -107,7 +107,7 @@
   [us] 
   (seq (into #{}
 	     (filter identity
-		     (work/map-work (maybe-comp host-url expand) us 20)))))
+		     (work/map-work (maybe-comp host-url expand) 20 us)))))
 
 (defn host-by-ip
   "Returns the IP address for the host of the given URL."

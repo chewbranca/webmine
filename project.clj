@@ -1,4 +1,4 @@
-(defproject webmine "0.1.2-SNAPSHOT"
+(defproject webmine "0.1.3-SNAPSHOT"
   :description "Web data mining library.
                Provides support for mining websites and newsfeeds."
   :dependencies [[org.clojure/clojure "1.2.0"]
@@ -11,9 +11,9 @@
                  [infer "1.0-SNAPSHOT"]
                  [clj-http "0.1.0-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
-                 [work "0.0.1-SNAPSHOT"]
+                 [work "0.1.3-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]
-                 [clj-sys/plumbing "0.1.2-SNAPSHOT"]]
+                 [clj-sys/plumbing "0.1.3-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
                      [lein-clojars "0.5.0"]]
   :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"})
