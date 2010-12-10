@@ -127,8 +127,8 @@
      (if-let [s (:content-size i)]
        i
        (assoc i :content-size (img-content-size (:url i)))))
-   imgs
-   (count imgs)))
+   (count imgs)
+   imgs))
 
 ;;example usage
 ;;(big-img (fetch-sizes (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/"))))))
