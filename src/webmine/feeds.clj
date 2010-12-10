@@ -423,7 +423,7 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 		   (find-outlinks b u))
 	feeds (filter
 	       identity
-	       (work/map-work canonical-feed outs 20))
+	       (work/map-work canonical-feed 20 outs))
 	;;we need to filter same host feeds again, as they can get filtered from outlinsk but then be found again when extracting canonical feeds.
 	ex-feeds (into #{} (filter #(external? (url u) (url %))
 				   feeds))]
