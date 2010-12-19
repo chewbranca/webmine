@@ -89,8 +89,7 @@
     ;    (filter is-text-div (parser/do-children div identity)))    
     ; :total-punc
     ;   (->> div .getTextContent (re-seq PUNC) count)    
-    
-        
+            
 (defvar- content-weight-vec 
   {:num-children-pars 100
    :only-base-children  10
@@ -99,9 +98,9 @@
    :num-commas 1.0
    :good-class-word 25
    :good-id-word 25
-   :bad-class-word -50
+   :bad-class-word -1000
    :num-words 0.01
-   :bad-id-word -50 }
+   :bad-id-word -1000 }
    "Div Features set by hand from readability port")        
 
 (defn- div-content-score [div]
@@ -168,10 +167,29 @@
 	       (catch Exception _ nil))]
     (if (or (nil? txt) (.isEmpty txt))
       (parser/text-from-dom d)
-      txt)))    
+      txt)))
 
+(defn format-plain-text-content
+  "return plain text rendering of html dom element. should
+   strip tags and replace <p> tags with newline"
+  [dom]
+  (-> dom
+      (parser/walk-dom
+        (fn [node]
+	  (cond
+	   (parser/element? node)
+	   (cond (= (.getNodeName node) "p") "\n\n"
+		 (= (.getNodeName node) "br") "\n"
+		 :default nil)		 		  
+	   (parser/text-node? node)
+	   (.getNodeValue node)))
+	(comp clj-str/join cons))
+      (.replaceAll "\n{3,}" "\n\n")
+      (.replaceAll "&nbsp;" "\t")))
 
-(comment 
+(comment
+
+  
   ;; THESE WORK
   "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/"    
   "http://www.huffingtonpost.com/arianna-huffington/post_1098_b_770178.html" ; readability messes up footer too  
@@ -198,6 +216,8 @@
   (extract-content (slurp "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues"))
   (-> "http://io9.com/5671733/air-force-academy-now-welcomes-spell+casters"
       slurp
-     extract-content)
+      parser/dom
+      readability-div
+      format-html-content)
        
-)    
+    )

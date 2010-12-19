@@ -75,7 +75,7 @@
 (defn node-type [n] (attr n "type"))
 
 ;;TODO: script thing still not working?
-(defn extract-text [#^Node n]
+(defn extract-text [^Node n]
   (if (not (text-node? n))
     ""
     (.getNodeValue n)))
@@ -104,7 +104,6 @@
   "children of current node"
   [^Node n]
   (to-seq (.getChildNodes n)))
-
 
 (defn strip-from-dom
   [#^Document d es]
@@ -154,12 +153,15 @@
   combine: result of visiting a single node & rest -> combines them as
   appropriate for the representational structure
   init: initilial value for combine
-  visit: visits one node and produces a result"
-  [d visit combine]
-  (let [extractor (fn extract [n]
-                    (combine (visit n)
-			     (do-children n extract)))]
-    (extractor d)))
+  visit: visits one node and produces a result. if result of visit
+  is :kill, then do not recurse on node and ignore node"
+  ([d visit combine]
+     (let [extractor (fn extract [n]
+		       (let [r (visit n)]
+			 (when-not (= r :kill)
+			   (combine r
+				    (do-children n extract)))))]
+       (extractor d))))
 
 (defn text-from-dom
   "recursively get the text content from Nodes.
