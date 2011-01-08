@@ -1,10 +1,11 @@
-(ns ^{:doc
+(ns webmine.parser
+  ^{:doc
   "parsing foo for learning machine hackers of the interwebs
   htmlparsing showdown: http://www.benmccann.com/dev-blog/java-html-parsing-library-comparison/
   revisit the HtmlParser and DOMBuilder in nutch and bixo if it seems like we
-  are having issues and they ahve a few more error cases handled."}
-  webmine.parser
-  (:require [clojure.contrib.seq-utils :as seq])
+  are having issues and they ahve a few more error cases handled."}  
+  (:require [clojure.contrib.seq-utils :as seq]
+	    [clojure.string :as str])
   (:use clojure.xml
         webmine.core
         webmine.urls
@@ -32,7 +33,7 @@
 		    (.setFeature Parser/namespacePrefixesFeature false)
 		    (.setFeature Parser/bogonsEmptyFeature false)
 		    (.setFeature Parser/ignoreBogonsFeature true)
-		    (.parse (InputSource. #^java.io.Reader input)))]
+		    (.parse (InputSource. ^java.io.Reader input)))]
        (.getDOM result))
      (catch org.w3c.dom.DOMException _ )
      (catch java.io.IOException _ )))) ;;pushback buffer overflow
@@ -55,7 +56,18 @@
 
 (defn text-node? [#^Node node]
   (and node (= (.getNodeType node) Node/TEXT_NODE)))
-        
+
+(extend-protocol  ToSeqable
+  org.w3c.dom.NodeList
+  (to-seq [this]
+       (for [i (range 0 (.getLength this))]
+	 (.item this (int i)))))
+
+(defn children
+  "children of current node"
+  [^Node n]
+  (to-seq (.getChildNodes n)))
+
 (defn attr [#^Node n #^String a]
   (if-let [attrs (.getAttributes n)]
     (if-let [att (.getNamedItem attrs a)]
@@ -67,12 +79,32 @@
   (when-let [attrs (.getAttributes n)]
        (into {}
           (for [i (range (.getLength attrs))
-                :let [item (bean (.item attrs i))]]
+                :let [item (bean (.item attrs i))]
+		:when (:specified item)]
             [(-> item :name keyword) (:textContent item)]))))      
 
 (defn href [n] (attr n "href"))
 (defn src [n] (attr n "src"))
 (defn node-type [n] (attr n "type"))
+
+(defn- attr-str [^Node n]
+  (str/join " " (map (fn [[k v]] (format "%s=\"%s\"" (.substring (str k) 1) v)) (attr-map n))))
+
+(defn html-str
+  "return the html string representing the node; should
+   be semantically equivlaent but attribute order and other
+   things like spacing and formatting may be gone."
+  [^Node n]
+  (cond
+     (= (.getNodeType n) Node/DOCUMENT_NODE)
+         (html-str (first (children n)))
+     (element? n)
+	  (str "<" (.getNodeName n) " "
+	           (attr-str n)
+		">"
+		(apply str (map html-str (children n)))
+		"</" (.getNodeName n) ">")
+     (text-node? n) (.getNodeValue n)))
 
 ;;TODO: script thing still not working?
 (defn extract-text [^Node n]
@@ -84,12 +116,6 @@
   (if-let [link (href n)]
     link ""))
 
-(extend-protocol  ToSeqable
-  org.w3c.dom.NodeList
-  (to-seq [this]
-       (for [i (range 0 (.getLength this))]
-	 (.item this (int i)))))
-
 (defn elements
   "gets the elements of a certian name in the dom
    (count (divs (dom (:body (fetch (url \"http://ftalphaville.ft.com/\")))))) -> 199"
@@ -99,11 +125,6 @@
 		      Document (.getElementsByTagName ^Document p t)
 		      Element (.getElementsByTagName ^Element p t))]
       (filter identity (to-seq node-list)))))
-
-(defn children
-  "children of current node"
-  [^Node n]
-  (to-seq (.getChildNodes n)))
 
 (defn strip-from-dom
   [#^Document d es]
