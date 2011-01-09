@@ -102,7 +102,7 @@
   (let [min-sentences 3
 	d (:des entry)
 	c (:content entry)
-	t (:text entry)]
+	t (or (:text entry) (extract-content (:body entry)))]
     (if (and d
              (not= d c)
              (>= (count-sentences (clean-text (dom d)))

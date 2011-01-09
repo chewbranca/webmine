@@ -4,13 +4,16 @@
         webmine.urls
         webmine.readability
         webmine.parser
+	[clojure.contrib.profile :only [prof]]
 	plumbing.core)
   (:require [work.core :as work])
+  (:import [org.w3c.dom Node Attr])
   (:import javax.imageio.ImageIO)
-  (:import java.awt.image.BufferedImage)
+  (:import [java.awt.image BufferedImage])
   (:import java.awt.image.ConvolveOp)
   (:import java.awt.image.Kernel)
   (:import java.awt.RenderingHints))
+
 
 ;;http://www.mkyong.com/regular-expressions/10-java-regular-expression-examples-you-should-know/
 ;; (defn imgs [t]
@@ -25,7 +28,7 @@
        (not (= "" h))
        (not (= "" w))))
 
-(defn extract-dim [d]
+(defn extract-dim [^String d]
   (Integer/parseInt
    (.replaceAll d "[^0-9]" "")))
 
@@ -36,7 +39,7 @@
     nil))
 
 (defn hw-from-str
-  [s]
+  [^String s]
   (let [wi (.indexOf s "width")
 	hi (.indexOf s "height")]
     (if (or (= -1 wi)
@@ -47,14 +50,14 @@
 
 (defn hw-from-style
   "in case hight and width are burried inside inline style tag."
-  [st]
+  [^Attr st]
   (hw-from-str (.getValue st)))
 
-(defn hw-from-tags [h w]
+(defn hw-from-tags [^Attr h ^Attr w]
   (to-hw (.getValue h)
 	 (.getValue w)))
 
-(defn img? [u]
+(defn img? [^String u]
   (or (.contains u ".jpg")
       (.contains u ".png")
       (.contains u ".gif")
@@ -63,7 +66,7 @@
 (defn img-urls [us] (filter img? us))
 
 ;;http://www.w3schools.com/tags/tag_IMG.asp
-(defn size [n]
+(defn size [^Node n]
   (if-let [attrs (.getAttributes n)]
     (let [w (.getNamedItem attrs "width")
 	  h (.getNamedItem attrs "height")
@@ -92,24 +95,25 @@
 ;;(big-img (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))))
 
 (defn read-img [u]
-  (ImageIO/read u))
+  (silent #(ImageIO/read %) u))
 
-(defn fetch-img [u]
+(defn ^BufferedImage
+  fetch-img [u]
   (if-let [ur (url u)]
     (read-img ur)))
 
 (defn img-size [u]
-  (if-let [i (fetch-img u)]
+  (when-let [i (prof :fetch-img (fetch-img u))]
     {:width (.getWidth i)
      :height (.getHeight i)}))
 
 (defn img-content-size [^String u]
   (or (-?> u
-	(.replaceAll " " "%20")
-	cl/head
-	:headers
-	(get "content-length")
-	Integer/parseInt)
+	   (.replaceAll " " "%20")
+	   cl/head
+	   :headers
+	   (get "content-length")
+	   Integer/parseInt)
       0))
 
 (defn fetch-sizes [imgs]
@@ -123,8 +127,8 @@
 
 (defn fetch-content-sizes [imgs]
   (work/map-work
-   (fn [i]
-     (if-let [s (:content-size i)]
+   (fn [i]     
+     (if  (:content-size i) 
        i
        (assoc i :content-size (img-content-size (:url i)))))
    (count imgs)
@@ -173,13 +177,15 @@
 	  :size (img-size (:url best)))))))
 
 (defn best-img-at
-  [u & [min]]
-  (best-img u (:body (cl/get u)) min))
+  ([u min]
+     (best-img u (:body (cl/get u)) min))
+  ([u] (best-img-at u nil)))
 
 (defn with-best-img [m url-key content-key & [min]]
   (let [img (try
 	      (best-img (url-key m)
-			(content-key m))
+			(content-key m)
+			min)
 	      (catch java.lang.Exception _ nil))]
   (assoc m :img img)))
 
@@ -193,7 +199,7 @@
      {:bilinear RenderingHints/VALUE_INTERPOLATION_BILINEAR
       :bicubic RenderingHints/VALUE_INTERPOLATION_BICUBIC})
 
-(defn resize [i h w & [hint]]
+(defn resize [^BufferedImage i h w & [hint]]
   (let [hint ((or hint :bilinear)
 	      hints)
 	old-w (.getWidth i nil)
@@ -208,7 +214,7 @@
     (.dispose bg)
     bi))
 
-(defn scale [i h-percent w-percent & [hint]]
+(defn scale [^BufferedImage i h-percent w-percent & [hint]]
   (let [old-w (.getWidth i nil)
 	old-h (.getHeight i nil)]
   (resize i (* old-h h-percent) (* old-w w-percent) hint)))
@@ -219,7 +225,7 @@
 (defn scale-to
 "takes an image and either hight or width.
 returns the scaled image, retaining aspect ratio."
-[i {h :height w :width} & [hint]]
+[^BufferedImage i {h :height w :width} & [hint]]
   (let [old-w (.getWidth i nil)
 	old-h (.getHeight i nil)
 	height (or h (scale-dim old-h w old-w))
@@ -227,7 +233,7 @@ returns the scaled image, retaining aspect ratio."
   (resize i height width hint)))
 
 ;;TODO: get into a stream for the server API.
-(defn save-img [image filename ext]
+(defn save-img [^BufferedImage image filename ext]
   (let [f (java.io.File. (str filename "." ext))]
     (try
      (ImageIO/write image ext f)
@@ -243,7 +249,7 @@ returns the scaled image, retaining aspect ratio."
 ;;contrast (might not work well for screenshots)
 ;;white balance
 ;;white color balance
-(defn kernel [image]
+(defn kernel [^BufferedImage image]
   (let [kernel (ConvolveOp. (Kernel. 3, 3,
 			(float-array [-1, -1, -1, -1, 9, -1, -1, -1, -1])))]
     (.filter kernel image nil)))
