@@ -12,7 +12,7 @@
         [plumbing.core :only [ToSeqable to-seq maybe-comp]])
   (:import java.io.StringReader
            org.ccil.cowan.tagsoup.Parser
-           (org.w3c.dom Node Document Element NodeList)
+           (org.w3c.dom Node Document Element NodeList Attr)
            (org.xml.sax XMLReader InputSource)
            (javax.xml.transform Transformer TransformerFactory)
            javax.xml.transform.sax.SAXSource
@@ -79,9 +79,9 @@
   (when-let [attrs (.getAttributes n)]
        (into {}
           (for [i (range (.getLength attrs))
-                :let [item (bean (.item attrs i))]
-		:when (:specified item)]
-            [(-> item :name keyword) (:textContent item)]))))      
+                :let [^Attr item (.item attrs i)]
+		:when (.getSpecified item)]
+            [(-> item (.getName) keyword) (.getTextContent item)]))))      
 
 (defn href [n] (attr n "href"))
 (defn src [n] (attr n "src"))

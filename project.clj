@@ -15,5 +15,10 @@
                  [clj-time "0.2.0-SNAPSHOT"]
                  [clj-sys/plumbing "0.1.3-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
+		     [robert/hooke "1.1.0"]
                      [lein-clojars "0.5.0"]]
+  :jvm-opts ["-server"  "-mx1800m" "-Djava.awt.headless=true" "-Dfile.encoding=UTF8"]
+  :test-selectors {:default (fn [v] (not (:performance v)))
+                   :performance :performance
+                   :all (constantly true)}
   :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"})
