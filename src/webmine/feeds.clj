@@ -95,17 +95,20 @@
     (when (> idx 0)
 	(.substring t 0 (- idx 1)))))
 
-(defn with-des [entry]
+(defn with-des
+  "assuems entry already has {:keys [text]}
+   fields present. returns entry with :des field"
+  [entry]
   (let [min-sentences 3
 	d (:des entry)
-	b (:body entry)
-	c (:content entry)]
+	c (:content entry)
+	t (:text entry)]
     (if (and d
              (not= d c)
              (>= (count-sentences (clean-text (dom d)))
                  min-sentences))
       entry
-      (assoc entry :des (-> b extract-content (first-k-sentences  min-sentences))))))
+      (assoc entry :des (first-k-sentences  t min-sentences)))))
 
 (defn fetch-body
   "Takes an entry.  assocs' in the body of the link."

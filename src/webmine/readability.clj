@@ -7,8 +7,7 @@
     and one that doesn't. "
     :author "Aria Haghighi <me@aria42.com>"}
   (:use [infer.measures :only [sparse-dot-product]]
-        [clojure.contrib.def :only [defvar-]]
-	[clojure.contrib.profile :only [prof profile]])  
+        [clojure.contrib.def :only [defvar-]])  
   (:require [clojure.string :as clj-str]
             [webmine.parser :as parser])
   (:import [org.apache.xerces.dom ElementNSImpl]
@@ -56,50 +55,41 @@
   "Features of the given div for readability"
   [^Element div]
   { :num-children-pars  ; how many immediate par children    
-    (prof :num-children-pars
-	 (count 
-	  (filter      
-	   (fn [^Node c] 
-	     (try
-	       (.equalsIgnoreCase (.getNodeName c) "p")
-	       (catch Exception _ false)))        
-	   (parser/do-children div identity))))  
+   (count 
+    (filter      
+     (fn [^Node c] 
+       (try
+	 (.equalsIgnoreCase (.getNodeName c) "p")
+	 (catch Exception _ false)))        
+     (parser/do-children div identity)))  
      :only-base-children 
-     (prof :only-base-children
-	   (to-binary
-	    (every?
-	     (fn [^Element  c]
-	       (or (parser/text-node? c)
-		   (re-matches BASE-ELEM
-			       (.getNodeName c))))
-	     (parser/do-children div identity))))
+   (to-binary
+    (every?
+     (fn [^Element  c]
+       (or (parser/text-node? c)
+	   (re-matches BASE-ELEM
+		       (.getNodeName c))))
+     (parser/do-children div identity)))
      :num-inner-divs
-     (prof :num-inner-divs
-	   (count
-	    (filter
-	     (fn [^Node c]
-	       (and (parser/element? c) (= (.getNodeName c) "div")))
-	     (parser/do-children div identity))))
+   (count
+    (filter
+     (fn [^Node c]
+       (and (parser/element? c) (= (.getNodeName c) "div")))
+     (parser/do-children div identity)))
      :good-class-word
-   (prof :good-class-word
-	 (->> div parser/attr-map :class (has-match? POSITIVE) to-binary))
+   (->> div parser/attr-map :class (has-match? POSITIVE) to-binary)
      :good-id-word
-   (prof :good-id-word
-	 (->> div parser/attr-map :id (has-match? POSITIVE) to-binary))    
+   (->> div parser/attr-map :id (has-match? POSITIVE) to-binary)    
     :bad-class-word 
-    (prof :bad-class-word
-	  (->> div parser/attr-map :class (has-match? NEGATIVE) to-binary))
+   (->> div parser/attr-map :class (has-match? NEGATIVE) to-binary)
     :bad-id-word 
-    (prof :bad-id-word
-	  (->> div parser/attr-map :id (has-match? NEGATIVE) to-binary))    
+   (->> div parser/attr-map :id (has-match? NEGATIVE) to-binary)    
     :long-text?
-    (prof :long-text?
-	  (to-binary (> (-> div .getTextContent count) 10)))
+   (to-binary (> (-> div .getTextContent count) 10))
     :num-commas
-    (prof :num-commas
-	  (->> div .getTextContent (re-seq comma-re) count))
+   (->> div .getTextContent (re-seq comma-re) count)
    :total-words
-    (prof :total-words (->> div .getTextContent (re-seq word-re) count))     
+   (->> div .getTextContent (re-seq word-re) count)     
    })
     ; :num-children-text-divs
     ;  (count
@@ -121,8 +111,8 @@
    "Div Features set by hand from readability port")        
 
 (defn- div-content-score [div]
-  (let [dfv (prof :div-feat-vec (div-feat-vec div))]
-    (prof :dot-prod (sparse-dot-product dfv content-weight-vec)))) 
+  (let [dfv (div-feat-vec div)]
+    (sparse-dot-product dfv content-weight-vec))) 
   
 (defn ^Node find-best-content-div 
   "For the given dom root, what is the best DIV. Returns
@@ -132,10 +122,11 @@
    For best performance, consider calling strip-bad-divs
    on dom before passing in here."
   [root]
-  (->> (prof :divs (parser/divs root))
-       ; At least as long as a tweet!
-       (filter (fn [^Node d] (>= (-> d .getTextContent count) 140)))
-       (apply max-key div-content-score)))
+  (when-let [divs (parser/divs root)]
+    (->> divs
+	;; At least as long as a tweet!
+	(filter (fn [^Node d] (>= (-> d .getTextContent count) 140)))
+	(apply max-key div-content-score))))
        
 (defn strip-bad-divs! 
   "before finding-best-content-div use this to remove
@@ -175,15 +166,15 @@
 (defn extract-content
   "return the readability text from raw-html string"
   [raw-html]
-  (let [d (prof :setup (let [root (parser/dom raw-html)]
-	     (try (parser/strip-non-content root)
-		  (catch Exception _ root))))
+  (let [d (let [root (parser/dom raw-html)]
+	    (try (parser/strip-non-content root)
+		 (catch Exception _ root)))
 	^String txt
-	  (prof :all-content (try (-> d
-		    strip-bad-divs!
-		    find-best-content-div
-		    .getTextContent)
-		(catch Exception _ nil)))]
+	(try (-> d
+		 strip-bad-divs!
+		 find-best-content-div
+		 .getTextContent)
+	     (catch Exception _ nil))]
     (if (or (nil? txt) (.isEmpty txt))
       (parser/text-from-dom d)
       txt)))
