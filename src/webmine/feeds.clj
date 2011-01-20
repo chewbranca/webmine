@@ -244,11 +244,12 @@
         root (-> ^String source (.getBytes "UTF-8") java.io.ByteArrayInputStream.
                  parse
                  zip/xml-zip)]
-    (cond
-     (xml-zip/xml1-> root :channel) (parse-rss root)
-     (xml-zip/xml-> root :entry) (parse-atom root)
-     :default
-     (RuntimeException. "Unknown feed format"))))
+    (-> (cond
+	 (xml-zip/xml1-> root :channel) (parse-rss root)
+	 (xml-zip/xml-> root :entry) (parse-atom root)
+	 :default
+	 (RuntimeException. "Unknown feed format"))
+	(update-in [:date] compact-date-time))))
 
 (defn- entries [url]
   "
