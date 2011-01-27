@@ -131,7 +131,7 @@
      (if  (:content-size i) 
        i
        (assoc i :content-size (img-content-size (:url i)))))
-   (count imgs)
+   (min (count imgs) 100)
    imgs))
 
 ;;example usage

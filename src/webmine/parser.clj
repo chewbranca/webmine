@@ -16,7 +16,8 @@
            (org.xml.sax XMLReader InputSource)
            (javax.xml.transform Transformer TransformerFactory)
            javax.xml.transform.sax.SAXSource
-           javax.xml.transform.dom.DOMResult))
+           javax.xml.transform.dom.DOMResult
+           org.apache.commons.lang.StringEscapeUtils))
 
 (defn dom [source]
   "html string -> dom using TagSoup.
@@ -157,7 +158,7 @@
 
 (defn anchors [d] (elements d "a"))
 
-(defn head [#^Document d]
+(defn head [^Document d]
   (.item
    (.getElementsByTagName d "head")
    0))
@@ -200,19 +201,28 @@
        (doall (map #(.append buffer %) results))
        (str buffer)))))
 
+(defn unescape-html
+  "Convert HTML entities to proper Unicode characters."
+  [^String t]
+  (StringEscapeUtils/unescapeHtml t))
+
 (defn clean-text [d]
-  (text-from-dom (strip-non-content d)))
+  "Returns a string of sanitized text content from an HTML document."
+  (-> d
+      strip-non-content
+      text-from-dom
+      unescape-html))
 
 (defn scrub-html
   "takes a document map and a list of keys containing html strings.
 returns a map with the values at those keys scrubbed down to clean text."
   [doc & keys]
   (reduce (fn [d k]
-	    (assoc d k
-		   (or ((maybe-comp clean-text dom k) d)
-		       (k d))))
-	  doc
-	  keys))
+            (assoc d k
+                   (or ((maybe-comp clean-text dom k) d)
+                       (k d))))
+          doc
+          keys))
 
 ;;(hrefs (elements (head d) "link"))
 ;;(links-from-dom (head d))
