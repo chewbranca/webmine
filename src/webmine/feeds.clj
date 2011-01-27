@@ -345,7 +345,7 @@
 	     #_(.matches u "^.*/[^/.]*$"))
 	 (not (.endsWith u "xmlrpc.php")))))
 
-(defn- fix-link
+(defn fix-link
   "fix absolute links"
   [base #^String link]
   (if (and link (.startsWith link "/"))
@@ -356,9 +356,10 @@
   "checks head of page for rss feed links. Does two checks, any links
    that are marked as rss/xml/atom in the link type or if
    any link has rss xml or  "
-  [page]
+  [page-url & [body]]
   ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
-  (let [d (if (node? page) page (-> page header-str dom)) 
+  (let [body (or body (header-str page-url))
+	d (dom body)
 	first-attempt
 	;; sometimes rss feeds are marked as
 	;; <link type="application/rss+xml">
@@ -368,7 +369,7 @@
 		:let [attr (attr-map l)
 		      #^String type (:type attr)
 		      #^String link (->> attr :href
-					 (fix-link (host-url (str page))))]
+					 (fix-link (host-url (str page-url))))]
 		:when (and link
 			   type
 			   (or (.contains type "rss")
