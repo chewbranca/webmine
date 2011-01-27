@@ -51,6 +51,9 @@
 ; const unsigned short  DOCUMENT_FRAGMENT_NODE         = 11;
 ; const unsigned short  NOTATION_NODE                  = 12;
 
+(defn node? [n]
+  (instance? Node n))
+
 (defn element? [#^Node node]
  (and node (= (.getNodeType node) Node/ELEMENT_NODE)))
 

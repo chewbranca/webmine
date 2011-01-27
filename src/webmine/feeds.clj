@@ -358,7 +358,7 @@
    any link has rss xml or  "
   [page]
   ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
-  (let [d (-> page header-str dom)
+  (let [d (if (node? page) page (-> page header-str dom)) 
 	first-attempt
 	;; sometimes rss feeds are marked as
 	;; <link type="application/rss+xml">
