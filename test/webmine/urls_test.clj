@@ -41,7 +41,7 @@
 				   (url "http://bit.ly/1Dpk5")])))))
   (is (= ["http://blog.jasonmorton.com"
           "http://blog.revolutionanalytics.com"
-          "http://www.iaventurepartners.com"
+          "http://www.iaventures.com"
           "http://www.readwriteweb.com"]
          (sort
           (map str 

@@ -152,6 +152,12 @@
 
 ;; TODO: better way of dealing with min size.  should really be composed more like classifiers, but let's leave it flat and lame until we figure out more about what we really need to do.
 
+(defn core-imgs [u] 
+  (imgs (readability-div (dom (:body (cl/get u))))))
+
+(defn all-imgs [u] 
+  (imgs (dom (:body (cl/get u)))))
+
 (defn best-img
   [u content & [min]]
   (let [d (dom content)
