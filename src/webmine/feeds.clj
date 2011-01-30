@@ -326,7 +326,6 @@
 
 ;; ;;TODO: refactor to a sinlge api - url, string url, etc.
 
-
 (defn comment? [u]
   (.contains (str u) "comments"))
 
@@ -338,7 +337,9 @@
 	     (.contains u "rss")
 	     (.contains u "atom")
 	     #_(.matches u "^.*/[^/.]*$"))
-	 (not (.endsWith u "xmlrpc.php")))))
+	 (not (.endsWith u "xmlrpc.php"))
+	 (not (.endsWith u "osd.xml"))
+	 (not (.endsWith u "/opensearch.xml")))))
 
 (defn fix-link
   "fix absolute links"
@@ -368,24 +369,9 @@
 		:when (and link
 			   type
 			   (or (.contains type "rss")
-			       (.contains type "atom"))) ]
-	    link))
-
-;;most of the search urls are of the form:
-;;<link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="FriendFeed Search"/>
-
-;;specificly, they type="application/opensearchdescription+xml".  We can filter these out below, but first let's see how often we get a good feed if we ignore the fallback case and take only feeds in the header and identified by the standard.
-
-	;;if we didn't get anything on the first attempt, get all links in head and see if we can find an rss link.
-	;; all-feeds (if (not (empty? first-attempt))
-	;; 	    first-attempt
-		    
-	;; 	    (when-let [head-links (-> d head links-from-dom)]
-	;; 	      (->> head-links
-	;; 		   (map (partial fix-link (str page)))
-	;; 		   (filter #(and (not (comment? %)) (rss-suffix? %))))))
-	]
-
+			       (.contains type "atom"))
+			   (not (comment? link)))]
+	    link))]
     (into #{}	  
 	  (filter identity #_(comp feed? url) first-attempt))))
 

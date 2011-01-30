@@ -28,6 +28,8 @@
 	 (canonical-feed "http://techcrunch.com/2010/11/20/no-palin-no-galin/")))
   (is (= nil
 	 (canonical-feed "http://friendfeed.com/paul/6c012ca5/europe-web-of-debt")))
+  (is (= "http://feeds.feedburner.com/ommalik"
+       (canonical-feed "http://gigaom.com")))
   (is (= nil
 	 (canonical-feed "http://friendfeed.com/paul/74dd00cc/is-anyone-energized-by-doing-email")))
   (is (= "http://feeds.feedburner.com/TodayIFoundOut"
