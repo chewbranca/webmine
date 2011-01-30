@@ -161,26 +161,22 @@
 (defn best-img
   [u content & [min]]
   (let [d (dom content)
-	;;first try to get the images out of the core body div.
-	core-imgs (imgs (readability-div d))
-	;;if that we have core images, use those, if not, get all the images in the dom
-	target-imgs (if (not (empty? core-imgs))
-		      core-imgs
-		      (imgs d))
-	eis (expand-relative-urls u target-imgs)
-	;;ensure we have sizes for all images.
-	sized (fetch-content-sizes eis)
-	sizes (if min (filter (fn [i] (>= (:content-size i) min)) sized) sized)]
-    (when-not (empty? sizes) 
-	;;take the first image we find that has no follow image that is larger than twice it's size.
-      (when-let [best (reduce (fn [best next]
-				(if (> (:content-size next)
-				       (* (:content-size best) 2))
-				  next
-				  best))
-			      sizes)]
-	(assoc best
-	  :size (img-size (:url best)))))))
+	core-imgs (imgs (readability-div d))]
+    (if (empty? core-imgs) nil
+	(let [eis (expand-relative-urls u core-imgs)
+	      ;;ensure we have sizes for all images.
+	      sized (fetch-content-sizes eis)
+	      sizes (if min (filter (fn [i] (>= (:content-size i) min)) sized) sized)]
+	  (when-not (empty? sizes) 
+	    ;;take the first image we find that has no follow image that is larger than twice it's size.
+	    (when-let [best (reduce (fn [best next]
+				      (if (> (:content-size next)
+					     (* (:content-size best) 2))
+					next
+					best))
+				    sizes)]
+	      (assoc best
+		:size (img-size (:url best)))))))))
 
 (defn best-img-at
   ([u min]
