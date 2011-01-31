@@ -21,14 +21,7 @@
   :test-selectors {:default (fn [v] (not (:performance v)))
                    :performance :performance
                    :all (constantly true)}
-  :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"})
 
-(comment
-  (use 'webmine.readability)
-  (use 'webmine.feeds)
-
-  (def f (canonical-feed "http://matt-welsh.blogspot.com/2011/01/does-google-do-research.html"))
-  (def es (fetch-entries f))
-  (first es)
-  (extract-content (slurp ))
-)
+  :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"
+                  "snapshots" "http://mvn.getwoven.com/repos/woven-public-snapshots"
+                  "releases" "http://mvn.getwoven.com/repos/woven-public-releases"})
