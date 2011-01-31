@@ -9,7 +9,7 @@
                  [xalan "2.7.1"]
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
-                 [clj-http "0.1.0-SNAPSHOT"]
+                 [woven/clj-http "0.1.0-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
                  [work "0.2.3-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]
@@ -22,3 +22,13 @@
                    :performance :performance
                    :all (constantly true)}
   :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"})
+
+(comment
+  (use 'webmine.readability)
+  (use 'webmine.feeds)
+
+  (def f (canonical-feed "http://matt-welsh.blogspot.com/2011/01/does-google-do-research.html"))
+  (def es (fetch-entries f))
+  (first es)
+  (extract-content (slurp ))
+)
