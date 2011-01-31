@@ -116,10 +116,6 @@
   (assoc e :body
 	 (:body (http/get (:link e)))))
 
-(defrecord Feed [title des link entries])
-
-(defrecord FeedEntry [title link content des date author])
-
 ;;
 ;; Entry Supplements: Text, Image
 ;;
@@ -145,23 +141,22 @@
 (defn- rss-item-node-to-entry [item]
   (let [item-root (zip/xml-zip item)
         get-text (fn [k] (xml-zip/xml1-> item-root k xml-zip/text))]
-    (FeedEntry.
-     ;; title
+    {:title
      (get-text :title)
-     ;; link
+     :link
      (get-text :link)
-     ;; content
+     :content
      (apply max-key count
 	    (map get-text [:content :description :content:encoded]))
-     ;; des
+     :des
      (first (filter identity
 		    (map get-text [:description :content :content:encoded])))
-     ;; date
+     :date
      (first (for [k [:pubDate :date :updatedDate :dc:date]
 		  :let [s (get-text k)]
 		  :when s] (compact-date-time s)))
-     ;; author
-     (get-text :author))))
+     :author
+     (get-text :author)}))
 
 (defn- rss-feed-meta [root]
   {:title
@@ -173,7 +168,7 @@
    :lang
    (xml-zip/xml1-> root :channel :language xml-zip/text)
    :img
-   (xml-zip/xml1-> root :channel :image xml-zip/text)
+   (xml-zip/xml1-> root :channel :image :url xml-zip/text)
    :link
    (xml-zip/xml1-> root :channel :link xml-zip/text)})
 
@@ -193,8 +188,8 @@
   :des Description of feed
   :link link to feed
   :entries seq of Entry records, see doc below for entries"
-  (let [{t :title d :des l :link} (rss-feed-meta root)]
-    (Feed. t d l (rss-feed-entries root))))
+  (let [feed-meta (rss-feed-meta root)]
+     (assoc feed-meta :entries (rss-feed-entries root))))
 
 ;;
 ;; Atom
@@ -331,7 +326,6 @@
 
 ;; ;;TODO: refactor to a sinlge api - url, string url, etc.
 
-
 (defn comment? [u]
   (.contains (str u) "comments"))
 
@@ -343,7 +337,9 @@
 	     (.contains u "rss")
 	     (.contains u "atom")
 	     #_(.matches u "^.*/[^/.]*$"))
-	 (not (.endsWith u "xmlrpc.php")))))
+	 (not (.endsWith u "xmlrpc.php"))
+	 (not (.endsWith u "osd.xml"))
+	 (not (.endsWith u "/opensearch.xml")))))
 
 (defn fix-link
   "fix absolute links"
@@ -373,24 +369,9 @@
 		:when (and link
 			   type
 			   (or (.contains type "rss")
-			       (.contains type "atom"))) ]
-	    link))
-
-;;most of the search urls are of the form:
-;;<link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title="FriendFeed Search"/>
-
-;;specificly, they type="application/opensearchdescription+xml".  We can filter these out below, but first let's see how often we get a good feed if we ignore the fallback case and take only feeds in the header and identified by the standard.
-
-	;;if we didn't get anything on the first attempt, get all links in head and see if we can find an rss link.
-	;; all-feeds (if (not (empty? first-attempt))
-	;; 	    first-attempt
-		    
-	;; 	    (when-let [head-links (-> d head links-from-dom)]
-	;; 	      (->> head-links
-	;; 		   (map (partial fix-link (str page)))
-	;; 		   (filter #(and (not (comment? %)) (rss-suffix? %))))))
-	]
-
+			       (.contains type "atom"))
+			   (not (comment? link)))]
+	    link))]
     (into #{}	  
 	  (filter identity #_(comp feed? url) first-attempt))))
 

@@ -39,16 +39,19 @@
   (profile (time (doall (map best-img-at test-urls)))))
 
 
-;;gets me:
-;;http://measuringmeasures.com/blog/2010/10/21/clojure-key-value-stores-voldemort-and-s3.html
-
 ;;image with no size tags, also has later image in core body that is slightly larger, we should get the top image.
-;;http://techcrunch.com/2010/10/22/stripon/
+(deftest img-without-size-tag
+ (is (= "http://tctechcrunch.files.wordpress.com/2010/10/screen-shot-2010-10-22-at-9-55-42-am.png"
+	(:url (best-img-at "http://techcrunch.com/2010/10/22/stripon/" 1000)))))
 
-;;rolling back to all images when there are none in the body.  image is also relative path to host.
-;;http://daringfireball.net/2010/10/apple_no_longer_bundling_flash_with_mac_os_x
+(deftest none-in-body
+ (is (= nil
+	(:url (best-img-at "http://daringfireball.net/2010/10/apple_no_longer_bundling_flash_with_mac_os_x" 1000)))))
 
-;;trick outer div with bigger image for promotion.
-;;http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/
-;;http://gigaom.com/2010/10/23/latest-smartphones-reviewed-t-mobile-g2-nokia-n8/
+(deftest trick-outer-div-w-promo
+ (is (= "http://gigaom2.files.wordpress.com/2010/10/devicefidelity-nfc-microsd-card.jpeg?w=185&h=140"
+	(:url (best-img-at "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/" 1000)))))
 
+(deftest fall-back-to-nothing
+ (is (= nil
+	(best-img-at "http://www.newyorker.com/humor/2011/01/24/110124sh_shouts_allen" 1000))))
