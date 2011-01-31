@@ -21,4 +21,6 @@
   :test-selectors {:default (fn [v] (not (:performance v)))
                    :performance :performance
                    :all (constantly true)}
-  :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"})
+  :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"
+                  "snapshots" "http://mvn.getwoven.com/repos/woven-public-snapshots"
+                  "releases" "http://mvn.getwoven.com/repos/woven-public-releases"})
