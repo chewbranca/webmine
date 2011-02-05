@@ -80,3 +80,9 @@
 	  (first-k-sentences "hello thomas. baz. bar. bang." 1)))
   (is (= "hello thomas@gmail.com."
 	 (first-k-sentences "hello thomas@gmail.com. baz. bar. bang." 1))))
+
+
+
+;; http://www.usatoday.com/news/nation/2011-01-31-students31_ST_N.htm
+;; http://blog.kissmetrics.com/beginners-guide-to-landing-pages/
+;; http://www.latimes.com/news/nationworld/world/la-fg-muslim-brotherhood-20110131,0,5283199.story

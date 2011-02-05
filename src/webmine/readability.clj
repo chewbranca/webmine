@@ -7,7 +7,8 @@
     and one that doesn't. "
     :author "Aria Haghighi <me@aria42.com>"}
   (:use [infer.measures :only [sparse-dot-product]]
-        [clojure.contrib.def :only [defvar-]])  
+	[infer.core :only [max-by min-by]]
+        [clojure.contrib.def :only [defvar-]])
   (:require [clojure.string :as clj-str]
             [webmine.parser :as parser])
   (:import [org.apache.xerces.dom ElementNSImpl]
@@ -47,8 +48,7 @@
 ;          (-> children count (= 1))
 ;          (-> children first parser/text-node?))))
 
-
-(def ^:private word-re #"w\+")
+(def ^:private word-re #"\w+")
 (def ^:private comma-re #",")
 
 (defn- div-feat-vec 
@@ -111,45 +111,96 @@
    "Div Features set by hand from readability port")        
 
 (defn- div-content-score [div]
-  (let [dfv (div-feat-vec div)]
+   (let [dfv (div-feat-vec div)]
     (sparse-dot-product dfv content-weight-vec))) 
   
 (defn ^Node find-best-content-div 
   "For the given dom root, what is the best DIV. Returns
-   best DIV unaltered. May be elements in DIV that are non-content
-   up to user to remove those (scripts, etc.).
-   
-   For best performance, consider calling strip-bad-divs
-   on dom before passing in here."
+   best DIV unaltered.  Return root if there are no divs."
   [root]
-  (when-let [divs (parser/divs root)]
-    (->> divs
-	;; At least as long as a tweet!
-	(filter (fn [^Node d] (>= (-> d .getTextContent count) 140)))
-	(apply max-key div-content-score))))
-       
-(defn strip-bad-divs! 
-  "before finding-best-content-div use this to remove
-  divs which might be bad that are likely inside the best div. 
-  
-  Returns modified root with bad divs removed"
-  [root]
-  (let [bad-divs
+  (when-let [divs 
+	     (filter (fn [^Node d]
+		       (>= (-> d .getTextContent count) 140))
+		     (parser/divs root))]
+    (if (= 0 (count divs)) root
+	(apply max-key div-content-score divs))))
+
+(defn find-bad-divs [root]
          (filter
             (fn [div]
-              (or 
+                (let [^String style (-> div parser/attr-map :style)]
+                  (and style
+                       (re-matches #"display:\s*none;" (.toLowerCase style)))))
+            (parser/divs root)))
                 ; Footers Bad
                 ;; #_(or 
                 ;;   (->> div parser/attr-map :class (has-match? #"footer"))
                 ;;   (->> div parser/attr-map :id (has-match? #"footer")))
                 ; Related
                 ;; (or 
-                ;;   (->> div parser/attr-map :class (has-match? #"related")))  
-                ; You can't fool me
-                (let [^String style (-> div parser/attr-map :style)]
-                  (and style
-                       (re-matches #"display:\s*none;" (.toLowerCase style))))))
-            (parser/divs root))]
+                ;;   (->> div parser/attr-map :class (has-match? #"related")))
+
+;;TODO: do we need to look at p tags, and then look at the parent nodes of those p tags that ahve most p tags.
+
+;;https://github.com/tjweir/arc90-readability/blob/master/js/readability-0.1-debug.js
+;;https://gist.github.com/c87c071bddfe7ea9a945
+;; // Replace all doubled-up <BR> tags with <P> tags :
+;; var pattern = new RegExp ("<br/?>[ \r\n\s]*<br/?>", "g");
+;; document.body.innerHTML = document.body.innerHTML.replace(pattern, "</p><p>");
+
+(defn div-stats
+  [div]
+  (let [txt (parser/clean-text div)
+	a (parser/elements div "a")]
+    {:div div
+     :p (count (parser/elements div "p"))
+     :img (count (parser/elements div "img"))
+     :li (count (parser/elements div "li"))
+     :a (count a)
+     :embed (count (parser/elements div "embed"))
+     :commas (count (re-seq comma-re txt))
+     :awords (count (re-seq word-re
+			    (apply str
+				   (map parser/text-from-dom a))))
+     :words (count (re-seq word-re txt))}))
+  
+(defn strip-bads [root]
+  (let [ds (parser/divs root)]
+    (if (= 0 (count ds)) root
+	(let [best-div 
+	      (->> (cons root ds)
+		   (map div-stats)
+		   (filter
+		    (fn [{:keys [p img li
+				 a embed txt
+				 commas words awords]}]
+		      ;;(or
+		      ;; (< commas 10)
+		      (and 
+		       (> commas 5) 
+		       (> words 0))))
+		   ;; (<= words p) ;;(* 5 p))
+		   ;; (<= commas p)
+		   ;; (> img p)
+		   ;; (> li p)
+		   ;; (> a p)
+		   ;; (> embed 0))))
+		   ;;TODO: for li text too?
+		   (min-by 
+		    (fn [{:keys [words awords]}]
+		      (float (/ awords words))))
+		   :div)]
+	  (if (not (= best-div root))
+	    best-div
+	    (parser/strip-from-dom root ds))))))
+
+(defn strip-bad-divs! 
+  "before finding-best-content-div use this to remove
+  divs which might be bad that are likely inside the best div. 
+  
+  Returns modified root with bad divs removed"
+  [root]
+  (let [bad-divs (find-bad-divs root)]
     (parser/strip-from-dom root bad-divs)))
 
 (defn readability-div
@@ -158,7 +209,8 @@
   (-> d
       parser/strip-non-content
       strip-bad-divs!
-      find-best-content-div))
+      find-best-content-div
+      strip-bads))
 
 (defn- strip-tags [d tags]
   (apply d tags))
@@ -166,18 +218,8 @@
 (defn extract-content
   "return the readability text from raw-html string"
   [raw-html]
-  (let [d (let [root (parser/dom raw-html)]
-	    (try (parser/strip-non-content root)
-		 (catch Exception _ root)))
-	^String txt
-	(try (-> d
-		 strip-bad-divs!
-		 find-best-content-div
-		 .getTextContent)
-	     (catch Exception _ nil))]
-    (if (or (nil? txt) (.isEmpty txt))
-      (parser/text-from-dom d)
-      txt)))
+  (parser/clean-text
+   (readability-div (parser/dom raw-html))))
 
 (defn format-plain-text-content
   "return plain text rendering of html dom element. should
@@ -196,36 +238,3 @@
 	(comp clj-str/join cons))
       (.replaceAll "\n{3,}" "\n\n")
       (.replaceAll "&nbsp;" "\t")))
-
-(comment
-
-  
-  ;; THESE WORK
-  "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/"    
-  "http://www.huffingtonpost.com/arianna-huffington/post_1098_b_770178.html" ; readability messes up footer too  
-  "http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html"
-  "http://measuringmeasures.com/blog/2010/10/21/clojure-key-value-stores-voldemort-and-s3.html"
-  "http://techcrunch.com/2010/10/22/stripon/" ; gets an extra bit at the end wrong, but basically good 
-  "http://data-sorcery.org/2010/10/23/clojureconj/"
-  "http://daringfireball.net/2010/10/apple_no_longer_bundling_flash_with_mac_os_x"
-  "http://www.huffingtonpost.com/michael-moore/juan-williams-is-right-po_b_772766.html"
-  ; Had to save html below locally, but work on actual HTML
-  "http://www.nytimes.com/2010/10/24/world/asia/24afghan.html?_r=1&hp"
-  ; parser.clj doesn't clear the scripts here
-  "http://io9.com/5671733/air-force-academy-now-welcomes-spell+casters"
-  ; Works for this now
-  "http://www.freekareem.org/2010/11/16/kareem-amer-is-free/"
-
-  ;; Mostly Work 
-  ; Get content but lots of other stuff in content DIV
-  "http://lifehacker.com/5671690/this-weeks-top-downloads?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed:+lifehacker/full+(Lifehacker)"
-
-  ;; DOESNT WORK - no <p> tags !
-  "http://gardening.about.com/od/growingtips/tp/Tomato_Tips.htm"
-
-  (extract-content (slurp "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues"))
-  (-> "http://daringfireball.net/2010/10/apple_no_longer_bundling_flash_with_mac_os_x"
-      slurp
-      extract-content)
-       
- )

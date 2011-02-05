@@ -94,22 +94,6 @@
 (defn- attr-str [^Node n]
   (str/join " " (map (fn [[k v]] (format "%s=\"%s\"" (.substring (str k) 1) v)) (attr-map n))))
 
-(defn html-str
-  "return the html string representing the node; should
-   be semantically equivlaent but attribute order and other
-   things like spacing and formatting may be gone."
-  [^Node n]
-  (cond
-     (= (.getNodeType n) Node/DOCUMENT_NODE)
-         (html-str (first (children n)))
-     (element? n)
-	  (str "<" (.getNodeName n) " "
-	           (attr-str n)
-		">"
-		(apply str (map html-str (children n)))
-		"</" (.getNodeName n) ">")
-     (text-node? n) (.getNodeValue n)))
-
 ;;TODO: script thing still not working?
 (defn extract-text [^Node n]
   (if (not (text-node? n))
@@ -147,7 +131,10 @@
 ;;TODO: WTF is up with the required calling of strip-non-content twice?
 ;;something about the side effects happening in the stip tags or stip from dom fns?
 (defn strip-non-content [d]
-  (let [f #(strip-tags % "script" "style")]
+  (let [f #(strip-tags %
+		       "script" "style" "form"
+		       "object" "table" "h1"
+		       "h2" "h3" "iframe")]
     (f (f d))))
 
 (defn divs
@@ -188,6 +175,9 @@
 				    (do-children n extract)))))]
        (extractor d))))
 
+(defn text-from-elements [es]
+  (apply str (map extract-text es)))
+
 (defn text-from-dom
   "recursively get the text content from Nodes.
    inspired by: http://www.prasannatech.net/2009/02/convert-html-text-parser-java-api.html"
@@ -206,12 +196,16 @@
   [^String t]
   (StringEscapeUtils/unescapeHtml t))
 
+(defn strip-space [s]
+  (.trim (.replaceAll s "[\n \t]{3,}" " ")))
+
 (defn clean-text [d]
   "Returns a string of sanitized text content from an HTML document."
   (-> d
       strip-non-content
       text-from-dom
-      unescape-html))
+      unescape-html
+      strip-space))
 
 (defn scrub-html
   "takes a document map and a list of keys containing html strings.
@@ -248,3 +242,14 @@ returns a map with the values at those keys scrubbed down to clean text."
 (defn extract-features [response]
   (assoc response
     :body ((maybe-comp text-from-dom dom :body) response)))
+
+(defn html-str
+  "return the html string representing the node; should
+   be semantically equivlaent but attribute order and other
+   things like spacing and formatting may be gone."
+  [^Node node]
+  (-> node
+      (.getOwnerDocument)
+      (.getImplementation)
+      (.createLSSerializer)
+      (.writeToString node)))

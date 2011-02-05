@@ -109,7 +109,7 @@
                  min-sentences))
       entry
       (assoc entry :des (first-k-sentences  t min-sentences)))))
-
+ 
 (defn fetch-body
   "Takes an entry.  assocs' in the body of the link."
   [e]
