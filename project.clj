@@ -9,7 +9,7 @@
                  [xalan "2.7.1"]
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
-                 [woven/clj-http "0.1.0-SNAPSHOT"]
+                 [woven/clj-http "0.1.2-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
                  [work "0.2.3-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]
