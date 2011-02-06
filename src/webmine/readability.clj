@@ -177,8 +177,9 @@
 		      ;;(or
 		      ;; (< commas 10)
 		      (and 
-		       (> commas 5) 
-		       (> words 0))))
+		       ;; (> commas 5) 
+		       (> words 0)
+		       (> awords 0))))
 		   ;; (<= words p) ;;(* 5 p))
 		   ;; (<= commas p)
 		   ;; (> img p)
