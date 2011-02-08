@@ -154,7 +154,7 @@
      :date
      (first (for [k [:pubDate :date :updatedDate :dc:date]
 		  :let [s (get-text k)]
-		  :when s] (compact-date-time s)))
+		  :when s] s))
      :author
      (get-text :author)}))
 
@@ -198,8 +198,7 @@
 (defn- atom-item-node-to-entry [node]
   {:date (find-first
 	  (map
-	   (fn [k] (-> (xml-zip/xml1-> node k xml-zip/text)
-		       compact-date-time))
+	    (fn [k] (-> (xml-zip/xml1-> node k xml-zip/text)))
 	   [:updated]))
    :author (xml-zip/xml1-> node :author :name xml-zip/text)
    :title (xml-zip/xml1-> node :title xml-zip/text)
@@ -232,7 +231,7 @@
 ;;
 
 (defn- parse-feed [url-or-source]
-  (let [source (if (or (isa? (class url-or-source) java.net.URL)
+  (let [source (if (or (instance? java.net.URL url-or-source)
                        (.startsWith ^String url-or-source "http"))
                  (slurp url-or-source)
                  url-or-source)
@@ -244,6 +243,7 @@
 	 (xml-zip/xml-> root :entry) (parse-atom root)
 	 :default
 	 (RuntimeException. "Unknown feed format"))
+	;; Ensure date compacted
 	(update-in [:date] compact-date-time))))
 
 (defn- entries [url]
