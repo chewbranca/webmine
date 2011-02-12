@@ -230,7 +230,18 @@
 ;; Feed (RSS or ATOM)
 ;;
 
-(defn- parse-feed [url-or-source]
+(defn ensure-title [feed]
+  (if (:title feed)
+    feed
+    (let [title
+	    (-> (:entries feed)
+		first
+		:link
+		url
+		host)]
+      (assoc feed :title title))))
+
+(defn parse-feed [url-or-source]
   (let [source (if (or (instance? java.net.URL url-or-source)
                        (.startsWith ^String url-or-source "http"))
                  (slurp url-or-source)
@@ -244,7 +255,8 @@
 	 :default
 	 (RuntimeException. "Unknown feed format"))
 	;; Ensure date compacted
-	(update-in [:date] compact-date-time))))
+	(update-in [:date] compact-date-time)
+	ensure-title)))
 
 (defn- entries [url]
   "
@@ -278,24 +290,6 @@
 
 (defn links-from-entry [e]
  (-> e :content url-seq))
-
-;; (defn map-to-entry [entry]
-;;   (let [content-keys (difference
-;; 		      (into #{} (keys entry))
-;; 		      #{:title :link :author :date :des})
-;; 	content (map (fn [k]
-;; 		       (let [v (entry k)]
-;; 			 [k (.setValue (SyndContentImpl.) v)]))
-;; 		     content-keys)]
-;;   (doto (SyndEntryImpl.)
-;;     (.setTitle (:title entry))
-;;     (.setLink (:link entry))
-;;     (.setAuthor (:author entry))
-;;     (.setPublishedDate (:date entry))
-;;     (.setDescription
-;;      (doto (SyndContentImpl.)
-;;        (.setType "text/html")
-;;        (.setValue  (:des entry)))))))
 
 (defn feed-home [source]
  (if-let [synd-feed (parse-feed source)]
