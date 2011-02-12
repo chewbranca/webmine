@@ -324,22 +324,18 @@
   (and (internal? home other)
        (feed? other)))
 
-;; ;;TODO: refactor to a sinlge api - url, string url, etc.
-
-(defn comment? [u]
-  (.contains (str u) "comments"))
-
-(defn rss-suffix?
-  "does the url encode a possible rss or atom suffix"
-  [u]
-  (let [u (str u)]
-    (and (or (.contains u "xml")
-	     (.contains u "rss")
-	     (.contains u "atom")
-	     #_(.matches u "^.*/[^/.]*$"))
-	 (not (.endsWith u "xmlrpc.php"))
-	 (not (.endsWith u "osd.xml"))
-	 (not (.endsWith u "/opensearch.xml")))))
+(defn good-rss?
+  [link type]
+  (and link
+       type
+       (or (.contains type "rss")
+	   (.contains type "atom")
+	   (.contains link "rss")
+	   (.contains link "atom"))
+       (not (.contains link "comments"))
+       (not (.endsWith link "xmlrpc.php"))
+       (not (.endsWith link "osd.xml"))
+       (not (.endsWith link "/opensearch.xml"))))
 
 (defn fix-link
   "fix absolute links"
@@ -356,24 +352,18 @@
   ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
   (let [body (or body (header-str page-url))
 	d (dom body)
-	first-attempt
-	;; sometimes rss feeds are marked as
-	;; <link type="application/rss+xml">
+	rss-feeds
 	(when-let [all-links (elements d "link")]
 	  (for [l all-links
 		:when l
 		:let [attr (attr-map l)
 		      #^String type (:type attr)
 		      #^String link (->> attr :href
-					 (fix-link (host-url (str page-url))))]
-		:when (and link
-			   type
-			   (or (.contains type "rss")
-			       (.contains type "atom"))
-			   (not (comment? link)))]
+					 (fix-link
+					  (host-url (str page-url))))]
+		:when (good-rss? link type)]
 	    link))]
-    (into #{}	  
-	  (filter identity #_(comp feed? url) first-attempt))))
+    (into #{} (remove nil? rss-feeds))))
 
 (def ^{:doc "Avoid subscribing to multiple feeds on the same blog.
 Initial heuristic is to take url with min length.

@@ -5,10 +5,11 @@
         webmine.urls))
 
 (deftest is-link-an-rss-feed
-  (is (not (rss-suffix? "http://www.foo.com")))
-  (is (rss-suffix? "http://www.foo.com/feed.xml"))
-  (is (rss-suffix? "http://www.foo.com/feed.xml/"))
-  (is (not (rss-suffix? "http://www.foo.com/feed.html"))))
+  (is (not (good-rss? "http://www.foo.com" "")))
+  (is (not (good-rss?
+	    "http://www.foo.com/xmlrpc.php" "application+rss")))
+  (is (good-rss? "http://www.foo.com/feed.xml"  "application+rss"))
+  (is (not (good-rss? "http://www.foo.com/feed.html" ""))))
 
 (deftest find-rss-feeds
   (is (= (set ["http://www.huffingtonpost.com/feeds/original_posts/index.xml"
