@@ -7,6 +7,7 @@
   (:require [clojure.contrib.seq-utils :as seq]
 	    [clojure.string :as str])
   (:use clojure.xml
+	clojure.set
         webmine.core
         webmine.urls
         [plumbing.core :only [ToSeqable to-seq maybe-comp]])
@@ -128,6 +129,24 @@
     (recur (strip-from-dom d (elements d (first tags)))
 	   (rest tags))))
 
+(defn raise-in-dom
+  [#^Document d es]
+  (doseq [^Node e es]
+    (let [children (children e)
+	  parent (.getParentNode e)]
+      (doseq [^Node child children]
+	(.insertBefore parent child e))
+      (.removeChild parent e)))
+  (.normalize d)
+  d)
+
+(defn raise-tags [d & tags]
+  (if (or (not tags)
+	  (empty? tags))
+    d
+    (recur (raise-in-dom d (elements d (first tags)))
+	   (rest tags))))
+
 ;;TODO: WTF is up with the required calling of strip-non-content twice?
 ;;something about the side effects happening in the stip tags or stip from dom fns?
 (defn strip-non-content [d]
@@ -136,6 +155,30 @@
 		       "object" "table" "h1"
 		       "h2" "h3" "iframe")]
     (f (f d))))
+
+(def html-elements
+#{"dd" "big" "col" "head" "sub" "tt" "basefont" "a" "b" "body" "tfoot" "acronym" "pre" "img" "form" "iframe" "meta" "caption" "small" "noframes" "var" "dl" "em" "fieldset" "isindex" "i" "h1" "h2" "hr" "span" "input" "del" "h3" "script" "html" "dfn" "h4" "noscript" "optgroup" "legend" "bdo" "dir" "param" "area" "h5" "frame" "kbd" "code" "h6" "sup" "table" "ins" "font" "blockquote" "br" "p" "dt" "td" "abbr" "q" "samp" "div" "style" "base" "button" "strike" "s" "thead" "th" "label" "address" "center" "u" "option" "frameset" "tbody" "cite" "ul" "strong" "title" "applet" "textarea" "link" "select" "map" "li" "ol" "tr" "colgroup" "menu" "object"})
+
+(def whitelist-elements
+#{"dd" "col" "a" "tfoot" "acronym" "pre" "caption" "dl" "em" "h1" "h2" "del" "h3" "h4" "h5" "code" "h6" "table" "ins" "blockquote" "p" "dt" "td" "abbr" "thead" "address" "tbody" "body" "html" "cite" "ul" "strong" "li" "ol" "tr" "colgroup" "i" "hr" "strike" "th" "sub" "tt" "b" "big" "q"})
+
+(def blacklist-elements
+     (difference html-elements whitelist-elements))
+
+(defn strip-blacklist [d]
+  (let [f #(apply strip-tags
+		  % blacklist-elements)]
+    (f (f d))))
+
+(defn raise-content [d]
+  (let [f #(raise-tags
+		  % "div" "span")]
+    (f (f d))))
+
+(defn pretty-dom [d]
+  (-> d
+      raise-content
+      strip-blacklist))
 
 (defn divs
   "gets the divs in a dom.
@@ -156,9 +199,7 @@
 (defn do-children [#^Node n f]
   (if (not (and n (.hasChildNodes n)))
     []
-    (let [children (.getChildNodes n)]
-      (doall (for [i (range 0 (.getLength children))]
-	       (f (.item children i)))))))
+    (doall (map f (children n)))))
 
 (defn walk-dom
   "recursively walk the dom.
@@ -248,8 +289,10 @@ returns a map with the values at those keys scrubbed down to clean text."
    be semantically equivlaent but attribute order and other
    things like spacing and formatting may be gone."
   [^Node node]
-  (-> node
-      (.getOwnerDocument)
-      (.getImplementation)
-      (.createLSSerializer)
-      (.writeToString node)))
+  (let [d (if (instance? org.w3c.dom.Document node)
+	    node
+	    (.getOwnerDocument node))]
+    (-> d
+	(.getImplementation)
+	(.createLSSerializer)
+	(.writeToString node))))

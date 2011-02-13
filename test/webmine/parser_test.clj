@@ -36,4 +36,74 @@
     (is (= "foo\nbar"
 	 (strip-space "\n\n\tfoo  \n\n\n\n  bar\n \t   \n\n")))
     (is (= "foo\nbar"
-	 (strip-space "\n\n\tfoo \n\t  \nbar\n \t   \n\n"))))
+	   (strip-space "\n\n\tfoo \n\t  \nbar\n \t   \n\n"))))
+
+(def html-with-garbage
+"
+<html>
+<body>
+
+<p>foo</p>
+<p>bar</p>
+<p>baz</p>
+
+<img src=\"http://feeds.feedburner.com/~ff/Techcrunch?d=qj6IDK7rITs\" border=\"0\"></img>
+
+<form name=\"input\" action=\"html_form_action.asp\" method=\"get\">
+Username: <input type=\"text\" name=\"user\" />
+<input type=\"submit\" value=\"Submit\" />
+</form>
+
+<script type=\"text/javascript\">
+document.write(\"Hello World!\")
+</script>
+
+<iframe src=\"html_intro.asp\" width=\"100%\" height=\"300\">
+  <p>Your browser does not support iframes.</p>
+</iframe>
+
+</body>
+</html>
+")
+
+(def html-without-garbage
+"<?xml version=\"1.0\" encoding=\"UTF-16\"?><html xmlns:html=\"http://www.w3.org/1999/xhtml\"><body>\n\n<p>foo</p>\n<p>bar</p>\n<p>baz</p>\n\n\n\n\n\n\n\n\n\n</body></html>")
+
+(deftest clean-html-test
+  (is (= html-without-garbage
+	 (html-str (strip-blacklist
+		    (dom html-with-garbage))))))
+
+(def html-with-div-span
+"
+<html>
+<body>
+<span>fizzle<p>foo</p></span>
+<div>bar<p>baz</p></div>
+</body>
+</html>
+")
+
+(def html-from-div-span
+"<?xml version=\"1.0\" encoding=\"UTF-16\"?><html xmlns:html=\"http://www.w3.org/1999/xhtml\"><body>\nfizzle<p>foo</p>\nbar<p>baz</p>\n</body></html>")
+
+(deftest clean-html-test
+  (is (= html-from-div-span
+	 (html-str (raise-content (dom html-with-div-span))))))
+
+(def dirty-html-with-div-span
+"
+<html>
+<body><script type=\"text/javascript\">
+document.write(\"Hello World!\")
+</script><iframe src=\"html_intro.asp\" width=\"100%\" height=\"300\">
+  <p>Your browser does not support iframes.</p></iframe>
+<span>fizzle<p>foo</p></span>
+<div>bar<p>baz</p></div>
+</body>
+</html>
+")
+
+(deftest pretty-dom-test
+  (is (= html-from-div-span
+	 (html-str (pretty-dom (dom dirty-html-with-div-span))))))
