@@ -197,7 +197,7 @@
   (StringEscapeUtils/unescapeHtml t))
 
 (defn strip-space [s]
-  (.trim (.replaceAll s "[\n \t]{3,}" " ")))
+  (.trim (.replaceAll s "[\n \t]{3,}" "\n")))
 
 (defn clean-text [d]
   "Returns a string of sanitized text content from an HTML document."

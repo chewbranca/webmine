@@ -31,5 +31,9 @@
        (scrub-html tc :des :content))))
 
 (deftest strip-space-test
-  (is (= "foo bar"
+    (is (= "foo  bar"
+	 (strip-space "\n\n\tfoo  bar\n \t   \n\n")))
+    (is (= "foo\nbar"
+	 (strip-space "\n\n\tfoo  \n\n\n\n  bar\n \t   \n\n")))
+    (is (= "foo\nbar"
 	 (strip-space "\n\n\tfoo \n\t  \nbar\n \t   \n\n"))))
