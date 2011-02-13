@@ -80,7 +80,7 @@
 (deftest complete-title
   (is (= "RollingStone.com: Latest News "
 	 (:title (parse-feed rolling-stone))))
-  (is (= "www.rollingstone.com"
+  (is (= "rollingstone.com"
 	 (:title (parse-feed rolling-stone-sans-title)))))
 
 (deftest sentences

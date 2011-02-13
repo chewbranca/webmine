@@ -125,7 +125,12 @@
 
 (defn with-text [e]
   (assoc e :text
-  (extract-content (:body e))))
+	 (-> e
+	     :body
+	     dom
+	     readability-div
+	     pretty-dom
+	     html-str)))
 
 (defn complete-entry [e]
   (-x> e with-text with-des with-image))
@@ -238,7 +243,8 @@
 		first
 		:link
 		url
-		host)]
+		host
+		strip-subdomain)]
       (assoc feed :title title))))
 
 (defn parse-feed [url-or-source]
