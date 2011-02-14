@@ -10,12 +10,12 @@
 	[plumbing.core]
         [clojure.java.io :only [input-stream]])
   (:require [work.core :as work]
+            [webmine.http :as http]
             [clojure.zip :as zip]
             [webmine.images :as imgs]
             [clojure.contrib.logging :as log]
             [clojure.contrib.zip-filter :as zip-filter]
             [clojure.contrib.zip-filter.xml :as xml-zip]
-            [clj-http.client :as http]
             [clj-time.format :as time-fmt]
             [clj-time.coerce :as time-coerce])  
   (:import [com.sun.syndication.feed.synd
