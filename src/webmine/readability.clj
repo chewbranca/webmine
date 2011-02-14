@@ -113,40 +113,27 @@
 (defn- div-content-score [div]
    (let [dfv (div-feat-vec div)]
     (sparse-dot-product dfv content-weight-vec))) 
-  
+
+(defn min-chars? [d n]
+(>= (-> d .getTextContent count) n))
+
+(defn bad-style? [d]
+  (let [^String style (-> d parser/attr-map :style)]
+    (and style
+	 (re-matches #"display:\s*none;"
+		     (.toLowerCase style)))))
+
 (defn ^Node find-best-content-div 
   "For the given dom root, what is the best DIV. Returns
    best DIV unaltered.  Return root if there are no divs."
   [root]
   (when-let [divs 
 	     (filter (fn [^Node d]
-		       (>= (-> d .getTextContent count) 140))
-		     (parser/divs root))]
-    (if (= 0 (count divs)) root
-	(apply max-key div-content-score divs))))
-
-(defn find-bad-divs [root]
-         (filter
-            (fn [div]
-                (let [^String style (-> div parser/attr-map :style)]
-                  (and style
-                       (re-matches #"display:\s*none;" (.toLowerCase style)))))
-            (parser/divs root)))
-                ; Footers Bad
-                ;; #_(or 
-                ;;   (->> div parser/attr-map :class (has-match? #"footer"))
-                ;;   (->> div parser/attr-map :id (has-match? #"footer")))
-                ; Related
-                ;; (or 
-                ;;   (->> div parser/attr-map :class (has-match? #"related")))
-
-;;TODO: do we need to look at p tags, and then look at the parent nodes of those p tags that ahve most p tags.
-
-;;https://github.com/tjweir/arc90-readability/blob/master/js/readability-0.1-debug.js
-;;https://gist.github.com/c87c071bddfe7ea9a945
-;; // Replace all doubled-up <BR> tags with <P> tags :
-;; var pattern = new RegExp ("<br/?>[ \r\n\s]*<br/?>", "g");
-;; document.body.innerHTML = document.body.innerHTML.replace(pattern, "</p><p>");
+		       (and (not (bad-style? d))
+			    (min-chars? d 140)))
+		       (parser/divs root))]
+	     (if (= 0 (count divs)) root
+		 (apply max-key div-content-score divs))))
 
 (defn div-stats
   [div]
@@ -195,26 +182,13 @@
 	    best-div
 	    (parser/strip-from-dom root ds))))))
 
-(defn strip-bad-divs! 
-  "before finding-best-content-div use this to remove
-  divs which might be bad that are likely inside the best div. 
-  
-  Returns modified root with bad divs removed"
-  [root]
-  (let [bad-divs (find-bad-divs root)]
-    (parser/strip-from-dom root bad-divs)))
-
 (defn readability-div
   "given a dom, returns the best div."
   [d]
   (-> d
       parser/strip-non-content
-      strip-bad-divs!
       find-best-content-div
       strip-bads))
-
-(defn- strip-tags [d tags]
-  (apply d tags))
 
 (defn extract-content
   "return the readability text from raw-html string"
