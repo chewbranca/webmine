@@ -146,3 +146,6 @@
   (.replaceAll
    (re-matcher url-pattern t)
    ""))
+
+(defn strip-subdomain [s]
+  (.replaceAll s "www." ""))
