@@ -49,10 +49,14 @@
 	    {:des
 	     "Computer power management software company, 1E has released a new version of its marquee product, NightWatchman. Like its predecessors, version 6.0, helps corporations manage their network of computers to optimize energy efficiency. It gives IT managers the ability to remotely power down computers and establish energy-saving settings (ie."}))
 
+(def good-tc-fixed
+     (merge good-tc
+{:des "Computer power management software company, 1E has released a new version of its marquee product, NightWatchman. Like its predecessors, version 6.0, helps corporations manage their network of computers to optimize energy efficiency. It gives IT managers the ability to remotely power down computers and establish energy-saving settings (ie. automatic shutdown of desktops during the weekend). In the latest version, 1E has added three key features."}))
+
 (deftest des-tests
   (is (= bad-tc-fixed
 	 (with-des bad-tc)))
-  (is (= good-tc
+  (is (= good-tc-fixed
 	 (with-des good-tc))))
 
 (deftest date-parsing

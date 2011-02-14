@@ -86,30 +86,33 @@
 	 (recur (rest ps) k t)))))
 
 (defn first-k-sentences
-"returns the first k sentences from a string t."
-[t k]
+  "returns the first k sentences from a string t."
+  [t k]
   (let [sps (sent-spans t)
 	idx (if (< (count sps) k)
 	      (second (last sps))
 	      (second (nth sps (- k 1))))]
     (when (> idx 0)
-	(.substring t 0 (- idx 1)))))
+      (.substring t 0 (- idx 1)))))
 
 (defn with-des
-  "assuems entry already has {:keys [text]}
+  "assumes entry already has {:keys [text]}
    fields present. returns entry with :des field"
   [entry]
   (let [min-sentences 3
 	d (:des entry)
 	c (:content entry)
-	t (or (:text entry) (extract-content (:body entry)))]
-    (if (and d
-             (not= d c)
-             (>= (count-sentences (clean-text (dom d)))
-                 min-sentences))
-      entry
-      (assoc entry :des (first-k-sentences  t min-sentences)))))
- 
+	t (:body entry)
+	des (if (and d
+		     (not= d c)
+		     (>= (count-sentences (clean-text (dom d)))
+			 min-sentences))
+	      (clean-text (dom d))
+	      (first-k-sentences
+	       (clean-text (dom t))
+	       min-sentences))]
+	(assoc entry :des des)))
+
 (defn fetch-body
   "Takes an entry.  assocs' in the body of the link."
   [e]
