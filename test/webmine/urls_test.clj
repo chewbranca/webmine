@@ -39,8 +39,7 @@
 		    (unique-hosts [(url "http://bit.ly/bkuH97")
 
 				   (url "http://bit.ly/1Dpk5")])))))
-  (is (= ["http://blog.jasonmorton.com"
-          "http://blog.revolutionanalytics.com"
+  (is (= ["http://blog.revolutionanalytics.com"
           "http://www.iaventures.com"
           "http://www.readwriteweb.com"]
          (sort
@@ -51,7 +50,7 @@
                  (url "http://blog.revolution-computing.com")
                  (url "http://www.readwriteweb.com")
                  (url "http://www.readwriteweb.com")
-                 (url "http://blog.jasonmorton.com")]))))))
+                 (url "http://toolegit.cn")]))))))
 
 (deftest test-expand-relative-url
   (are [a r] (= a (expand-relative-url "http://foo.com/bar/baz" r))
