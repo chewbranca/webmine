@@ -1,5 +1,6 @@
 (ns webmine.http
   "HTTP client for webmine."
+  (:refer-clojure :exclude [get])
   (:require [clj-http.core :as clj-http]
             clj-http.client)
   (:use [plumbing.core :only [-?>]]
