@@ -31,9 +31,19 @@
        (scrub-html tc :des :content))))
 
 (deftest strip-space-test
-    (is (= "foo  bar"
-	 (strip-space "\n\n\tfoo  bar\n \t   \n\n")))
-    (is (= "foo\nbar"
-	 (strip-space "\n\n\tfoo  \n\n\n\n  bar\n \t   \n\n")))
-    (is (= "foo\nbar"
-	 (strip-space "\n\n\tfoo \n\t  \nbar\n \t   \n\n"))))
+  (is (= "foo  bar"
+         (strip-space "\n\n\tfoo  bar\n \t   \n\n")))
+  (is (= "foo\nbar"
+         (strip-space "\n\n\tfoo  \n\n\n\n  bar\n \t   \n\n")))
+  (is (= "foo\nbar"
+         (strip-space "\n\n\tfoo \n\t  \nbar\n \t   \n\n"))))
+
+(deftest charset-test
+  (is (= "windows-1250"
+         (charset (dom "<!DOCTYPE html PUBLIC \"-//Lidovky//DTD HTML 4//EN\" \"http://g.lidovky.cz/dtd/n3_uni.dtd\">
+<html><head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=windows-1250\">
+<meta http-equiv=\"cache-control\" content=\"no-cache\">
+<meta name=\"robots\" content=\"all\">
+<title>Zemřel Pavel Vondruška, muzikant a jeden z 'Cimrmanů' - www.lidovky.cz</title>
+</head><body></body></html>")))))

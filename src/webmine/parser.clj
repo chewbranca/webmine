@@ -5,7 +5,7 @@
   revisit the HtmlParser and DOMBuilder in nutch and bixo if it seems like we
   are having issues and they ahve a few more error cases handled."}  
   (:require [clojure.contrib.seq-utils :as seq]
-	    [clojure.string :as str])
+            [clojure.string :as str])
   (:use clojure.xml
         webmine.core
         webmine.urls
@@ -106,7 +106,7 @@
 
 (defn elements
   "gets the elements of a certian name in the dom
-   (count (divs (dom (:body (fetch (url \"http://ftalphaville.ft.com/\")))))) -> 199"
+   (count (elements doc \"div\")) -> 199"
   [p ^String t]
   (when p
     (let [node-list (condp #(isa? %2 %1) (class p)
@@ -253,3 +253,17 @@ returns a map with the values at those keys scrubbed down to clean text."
       (.getImplementation)
       (.createLSSerializer)
       (.writeToString node)))
+
+(defn charset
+  "Get charset from meta tag."
+  [d]
+  (let [ms (elements d "meta")]
+    (if-let [n (first (filter #(= "Content-Type"
+                                  (-> (attr-map %) :http-equiv))
+                              ms))]
+      (-> (attr-map n)
+          :content
+          (str/split #"=")
+          last
+          str/trim)
+      nil)))

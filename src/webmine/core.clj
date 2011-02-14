@@ -1,5 +1,5 @@
 (ns webmine.core
-  (:require [clj-http.client :as client]))
+  (:require [webmine.http :as http]))
 
 ;; From infer.core
 (defn best-by [compare keyfn coll]
@@ -20,11 +20,11 @@
 
 ;; From l.fetcher
 (defn body-str [u]
-  (try (:body (client/get (str u)))
+  (try (:body (http/get (str u)))
        (catch java.lang.Exception _ nil)))
 
 (defn header-str [u]
-  (try (:body (client/get (str u)))
+  (try (:body (http/get (str u)))
        (catch java.lang.Exception _ nil)))
 
 ;; From l.core
