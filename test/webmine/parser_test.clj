@@ -117,4 +117,3 @@ document.write(\"Hello World!\")
 (deftest pretty-dom-test
   (is (= html-from-div-span
 	 (html-str (pretty-dom (dom dirty-html-with-div-span))))))
->>>>>>> c813d949a15157482fa72fb6c985c79c4556ee85
