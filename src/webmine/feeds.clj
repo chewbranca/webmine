@@ -2,12 +2,12 @@
   (:use clojure.xml
         clojure.set
         clojure.contrib.java-utils
-        webmine.core
         webmine.readability
         webmine.parser
         webmine.urls
+        webmine.core
         mochi.nlp.process.sent-splitter
-	[plumbing.core]
+        [plumbing.core]
         [clojure.java.io :only [input-stream]])
   (:require [work.core :as work]
             [webmine.http :as http]
@@ -353,7 +353,7 @@
    any link has rss xml or  "
   [page-url & [body]]
   ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
-  (let [body (or body (header-str page-url))
+  (let [body (or body (http/header-str page-url))
 	d (dom body)
 	rss-feeds
 	(when-let [all-links (elements d "link")]
@@ -410,7 +410,7 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 
 (defn home-feed-outlinks
   [u]
-  (find-feed-outlinks (body-str u) u))
+  (find-feed-outlinks (http/body-str u) u))
 
 (defn entry-feed-outlinks
   "given the url of a blog's feed, find the outlinks to feeds from all the entries currently in this blog's feed."

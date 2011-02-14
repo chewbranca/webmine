@@ -7,8 +7,7 @@
   (:require [clojure.contrib.seq-utils :as seq]
             [clojure.string :as str])
   (:use clojure.xml
-	clojure.set
-        webmine.core
+        clojure.set
         webmine.urls
         [plumbing.core :only [ToSeqable to-seq maybe-comp]])
   (:import java.io.StringReader

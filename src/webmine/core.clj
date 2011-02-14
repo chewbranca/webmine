@@ -1,5 +1,4 @@
-(ns webmine.core
-  (:require [webmine.http :as http]))
+(ns webmine.core)
 
 ;; From infer.core
 (defn best-by [compare keyfn coll]
@@ -17,15 +16,6 @@
 ;; From infer.core
 (defn min-by [keyfn coll]
   (best-by < keyfn coll))
-
-;; From l.fetcher
-(defn body-str [u]
-  (try (:body (http/get (str u)))
-       (catch java.lang.Exception _ nil)))
-
-(defn header-str [u]
-  (try (:body (http/get (str u)))
-       (catch java.lang.Exception _ nil)))
 
 ;; From l.core
 (defn min-length [us]

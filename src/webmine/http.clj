@@ -46,3 +46,12 @@
   [url & [req]]
   (request (merge req {:method :get
                        :url url})))
+
+;; From l.fetcher
+(defn body-str [u]
+  (try (:body (get (str u)))
+       (catch java.lang.Exception _ nil)))
+
+(defn header-str [u]
+  (try (:body (get (str u)))
+       (catch java.lang.Exception _ nil)))
