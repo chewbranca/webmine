@@ -133,7 +133,7 @@
 	     dom
 	     readability-div
 	     pretty-dom
-	     html-str)))
+	     html-str2)))
 
 (defn complete-entry [e]
   (-x> e with-text with-des with-image))

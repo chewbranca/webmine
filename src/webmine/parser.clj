@@ -11,13 +11,18 @@
         webmine.urls
         [plumbing.core :only [ToSeqable to-seq maybe-comp]])
   (:import java.io.StringReader
+	   java.io.StringWriter
            org.ccil.cowan.tagsoup.Parser
            (org.w3c.dom Node Document Element NodeList Attr)
            (org.xml.sax XMLReader InputSource)
            (javax.xml.transform Transformer TransformerFactory)
-           javax.xml.transform.sax.SAXSource
+	   javax.xml.parsers.DocumentBuilderFactory
+	   javax.xml.transform.sax.SAXSource
            javax.xml.transform.dom.DOMResult
-           org.apache.commons.lang.StringEscapeUtils))
+           javax.xml.transform.dom.DOMSource
+           javax.xml.transform.OutputKeys
+	   javax.xml.transform.stream.StreamResult
+	   org.apache.commons.lang.StringEscapeUtils))
 
 (defn dom [source]
   "html string -> dom using TagSoup.
@@ -39,18 +44,10 @@
      (catch org.w3c.dom.DOMException _ )
      (catch java.io.IOException _ )))) ;;pushback buffer overflow
 
-; const unsigned short  ELEMENT_NODE                   = 1;
-; const unsigned short  ATTRIBUTE_NODE                 = 2;
-; const unsigned short  TEXT_NODE                      = 3;
-; const unsigned short  CDATA_SECTION_NODE             = 4;
-; const unsigned short  ENTITY_REFERENCE_NODE          = 5;
-; const unsigned short  ENTITY_NODE                    = 6;
-; const unsigned short  PROCESSING_INSTRUCTION_NODE    = 7;
-; const unsigned short  COMMENT_NODE                   = 8;
-; const unsigned short  DOCUMENT_NODE                  = 9;
-; const unsigned short  DOCUMENT_TYPE_NODE             = 10;
-; const unsigned short  DOCUMENT_FRAGMENT_NODE         = 11;
-; const unsigned short  NOTATION_NODE                  = 12;
+(defn document []
+  (-> (DocumentBuilderFactory/newInstance)
+      (.newDocumentBuilder)
+      (.newDocument)))
 
 (defn node? [n]
   (instance? Node n))
@@ -295,6 +292,21 @@ returns a map with the values at those keys scrubbed down to clean text."
         (.getImplementation)
         (.createLSSerializer)
         (.writeToString node))))
+
+(defn html-str2 [d]
+  (let 
+      [out (StreamResult. (StringWriter.))
+       tf (doto
+	      (.newTransformer (TransformerFactory/newInstance))
+	    (.setOutputProperty
+	     OutputKeys/OMIT_XML_DECLARATION "yes")
+	    (.setOutputProperty
+	     OutputKeys/METHOD "xml")
+	    (.setOutputProperty OutputKeys/ENCODING "UTF-8")
+	    (.setOutputProperty OutputKeys/INDENT "yes"))]
+    (.transform tf (DOMSource. d) out)
+    (strip-space
+     (.toString (.getWriter out)))))
 
 (defn charset
   "Get charset from meta tag."

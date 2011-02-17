@@ -33,8 +33,6 @@
        (canonical-feed "http://gigaom.com")))
   (is (= nil
 	 (canonical-feed "http://friendfeed.com/paul/74dd00cc/is-anyone-energized-by-doing-email")))
-  (is (= "http://feeds.feedburner.com/TodayIFoundOut"
-	 (canonical-feed "http://www.todayifoundout.com/")))
   (is (= "http://www.npr.org/rss/rss.php?id=1009"
 	 (canonical-feed "http://www.npr.org/2010/11/19/131450204/discontent-swells-in-hosni-mubarak-s-egypt"))))
 
