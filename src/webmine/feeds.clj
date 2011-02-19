@@ -53,7 +53,7 @@
    (concat
     (for [#^SimpleDateFormat sdf rfc822-rss-formats
 	  :let [d (silent
-		    #(.parse sdf (.trim s) (ParsePosition. 0)))]
+		   #(.parse sdf (.trim s) (ParsePosition. 0)))]
 	  :when d]
       (-> d time-coerce/from-date time-coerce/to-string))
     (for [fmt (vals time-fmt/formatters)
@@ -76,9 +76,9 @@
   ([body k]
      (sentences-from-ptags body k ""))
   ([body k text]
-  (let [d (dom body)
-	ps (elements d "p")
-	t (str text (text-from-dom (first ps)))]
+     (let [d (dom body)
+	   ps (elements d "p")
+	   t (str text (text-from-dom (first ps)))]
        (if (or (>= (count-sentences t)
 		   k)
 	       (empty? (rest ps)))
@@ -87,7 +87,7 @@
 
 (defn first-k-sentences
   "returns the first k sentences from a string t."
-  [t k]
+  [k t]
   (let [sps (sent-spans t)
 	idx (if (< (count sps) k)
 	      (second (last sps))
@@ -103,15 +103,14 @@
 	d (:des entry)
 	c (:content entry)
 	t (:text entry)
-	des (if (and d
-		     (not= d c)
-		     (>= (count-sentences (clean-text (dom d)))
-			 min-sentences))
-	      (clean-text (dom d))
-	      (first-k-sentences
-	       (clean-text (dom t))
-	       min-sentences))]
-	(assoc entry :des des)))
+	des (->> (if (and d
+		       (>= (count-sentences (clean-text (dom d)))
+			   min-sentences))
+		  d t)
+		dom
+		clean-text
+		(first-k-sentences min-sentences))]
+    (assoc entry :des des)))
 
 (defn fetch-body
   "Takes an entry.  assocs' in the body of the link."
@@ -146,9 +145,12 @@
 ;; RSS
 ;;
 
+(defn node-reader [root]
+  (fn [k] (xml-zip/xml1-> root k xml-zip/text)))
+
 (defn- rss-item-node-to-entry [item]
   (let [item-root (zip/xml-zip item)
-        get-text (fn [k] (xml-zip/xml1-> item-root k xml-zip/text))]
+	get-text (node-reader item-root)]
     {:title
      (get-text :title)
      :link
@@ -167,6 +169,7 @@
      (get-text :author)}))
 
 (defn- rss-feed-meta [root]
+  (let [get-text (node-reader root)])
   {:title
    (xml-zip/xml1-> root :channel :title xml-zip/text)
    :des
@@ -182,8 +185,8 @@
 
 (defn- rss-feed-entries [root]
   (let [get-items (fn [k] (xml-zip/xml-> root :channel k zip/node))
-	 nodes (find-first (complement empty?)
-			   [(get-items :item) (get-items :entry)])]
+	nodes (find-first (complement empty?)
+			  [(get-items :item) (get-items :entry)])]
     (for [n nodes
 	  :let [entry (into {}
 			    (filter second
@@ -197,7 +200,7 @@
   :link link to feed
   :entries seq of Entry records, see doc below for entries"
   (let [feed-meta (rss-feed-meta root)]
-     (assoc feed-meta :entries (rss-feed-entries root))))
+    (assoc feed-meta :entries (rss-feed-entries root))))
 
 ;;
 ;; Atom
@@ -206,13 +209,18 @@
 (defn- atom-item-node-to-entry [node]
   {:date (find-first
 	  (map
-	    (fn [k] (-> (xml-zip/xml1-> node k xml-zip/text)))
-	   [:updated]))
+	   (fn [k] (-> (xml-zip/xml1-> node k xml-zip/text)))
+	   [:updated
+	    :modified
+	    :created
+	    :published
+	    :issued]))
    :author (xml-zip/xml1-> node :author :name xml-zip/text)
    :title (xml-zip/xml1-> node :title xml-zip/text)
    :link (xml-zip/xml1-> node :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))
-   :content (xml-zip/xml1-> node :summary xml-zip/text)})
-  
+   :des (xml-zip/xml1-> node :summary xml-zip/text)
+   :content (xml-zip/xml1-> node :content xml-zip/text)})
+
 
 (defn- atom-feed-meta [root]
   {:title
@@ -227,7 +235,7 @@
    (xml-zip/xml1-> root  :image xml-zip/text)
    :link
    (xml-zip/xml1-> root :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))})
-  
+
 ;;TODO:  make this case work: view-source:http://cityroom.blogs.nytimes.com/feed/
 ;;use feed-
 (defn- parse-atom [root]
@@ -242,22 +250,22 @@
   (if (:title feed)
     feed
     (let [title
-	    (-> (:entries feed)
-		first
-		:link
-		url
-		host
-		strip-subdomain)]
+	  (-> (:entries feed)
+	      first
+	      :link
+	      url
+	      host
+	      strip-subdomain)]
       (assoc feed :title title))))
 
 (defn parse-feed [url-or-source]
   (let [source (if (or (instance? java.net.URL url-or-source)
-                       (.startsWith ^String url-or-source "http"))
-                 (slurp url-or-source)
-                 url-or-source)
-        root (-> ^String source (.getBytes "UTF-8") java.io.ByteArrayInputStream.
-                 parse
-                 zip/xml-zip)]
+		       (.startsWith ^String url-or-source "http"))
+		 (slurp url-or-source)
+		 url-or-source)
+	root (-> ^String source (.getBytes "UTF-8") java.io.ByteArrayInputStream.
+		 parse
+		 zip/xml-zip)]
     (-> (cond
 	 (xml-zip/xml1-> root :channel) (parse-rss root)
 	 (xml-zip/xml-> root :entry) (parse-atom root)
@@ -298,10 +306,10 @@
 	 (-> feed :entries empty? not))))
 
 (defn links-from-entry [e]
- (-> e :content url-seq))
+  (-> e :content url-seq))
 
 (defn feed-home [source]
- (if-let [synd-feed (parse-feed source)]
+  (if-let [synd-feed (parse-feed source)]
     (:link synd-feed)))
 
 (defn external?
@@ -370,7 +378,7 @@
 
 (def ^{:doc "Avoid subscribing to multiple feeds on the same blog.
 Initial heuristic is to take url with min length.
-May not be a good idea for blogs that have many useful feeds, for example, for a news site like huffington post."}
+May not be a good idea for blogs that have many useful feeds, for example, for a news site like NYT."}
      canonical-feed (comp min-length host-rss-feeds))
 
 ;;
@@ -378,8 +386,8 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 ;;
 
 (defn find-outlinks
-"string (page body) -> url (blog homepage) -> outlinks"
-[s h]
+  "string (page body) -> url (blog homepage) -> outlinks"
+  [s h]
   (seq (into #{}
 	     (work/filter-work
 	      #(external? (url h) %)
@@ -389,7 +397,7 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 ;;TODO: parallelize
 (defn blogroll [opml]
   (for [x (xml-seq (parse opml))
-        :when (= :outline (:tag x))
+	:when (= :outline (:tag x))
 	:let [a (:attrs x)
 	      u (or (:xmlUrl a) (:htmlUrl a))]
 	:when (url u)]
@@ -441,7 +449,7 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
   (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
   (canonical-feed "http://www.rollingstone.com/")
   (canonical-feed "http://techcrunch.com/2010/11/02/andreessen-horowitz-650m-fund/")
-  ; This one requires fix-link, otherwise doesn't work
+					; This one requires fix-link, otherwise doesn't work
   (canonical-feed "http://npr.org")
   (fetch-entries "http://scripting.com/rss.xml")
   (fetch-entries "http://feeds.nytimes.com/nyt/rss/HomePage")

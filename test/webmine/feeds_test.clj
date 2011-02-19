@@ -49,13 +49,13 @@
 
 (def good-tc-fixed
      (merge good-tc
-{:des "Computer power management software company, 1E has released a new version of its marquee product, NightWatchman. Like its predecessors, version 6.0, helps corporations manage their network of computers to optimize energy efficiency. It gives IT managers the ability to remotely power down computers and establish energy-saving settings (ie. automatic shutdown of desktops during the weekend). In the latest version, 1E has added three key features."}))
+{:des "Computer power management software company, 1E has released a new version of its marquee product, NightWatchman. Like its predecessors, version 6.0, helps corporations manage their network of computers to optimize energy efficiency. It gives IT managers the ability to remotely power down computers and establish energy-saving settings (ie."}))
 
 (deftest des-tests
-  (is (= bad-tc-fixed
-	 (with-des bad-tc)))
-  (is (= good-tc-fixed
-	 (with-des good-tc)))
+  (is (= (:des bad-tc-fixed)
+	 (:des (with-des bad-tc))))
+  (is (= (:des good-tc-fixed)
+	 (:des (with-des good-tc))))
   (is (= "PayPal abruptly went down for over an hour Friday morning, stalling transactions for all its customers.\n\nThe outage affected PayPal's API, so customers attempting to make or receive payments between 8-9:30am Pacific time this morning received an error message, \"Sorry - your last action could not be completed.\"\n\nAlthough the issue was filed as \"resolved\" as of 9:24am Pacific time Friday, PayPal's customer service Twitter page recently tweeted that it was addressing new issues, in response to a user whose credit cards were being declined."
        (:des
 	  (complete-entry
@@ -93,11 +93,11 @@
 
 (deftest sentences
   (is (= "hello thomas. baz. bar."
-	 (first-k-sentences "hello thomas. baz. bar. bang." 3)))
+	 (first-k-sentences 3 "hello thomas. baz. bar. bang.")))
   (is (=  "hello thomas."
-	  (first-k-sentences "hello thomas. baz. bar. bang." 1)))
+	  (first-k-sentences 1 "hello thomas. baz. bar. bang.")))
   (is (= "hello thomas@gmail.com."
-	 (first-k-sentences "hello thomas@gmail.com. baz. bar. bang." 1))))
+	 (first-k-sentences 1 "hello thomas@gmail.com. baz. bar. bang." ))))
 
 
 
