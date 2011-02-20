@@ -149,3 +149,14 @@
 
 (defn strip-subdomain [s]
   (.replaceAll s "www." ""))
+
+(defn exists? [^String url]
+  (try 
+    (HttpURLConnection/setFollowRedirects true)
+;;    (HttpURLConnection/setInstanceFollowRedirects false)
+    (let [^HttpURLConnection conn (doto (.openConnection (URL. url))
+				    (. setRequestMethod "HEAD"))]
+      (=
+       (.getResponseCode conn)
+       HttpURLConnection/HTTP_OK))
+    (catch Exception e false)))

@@ -145,12 +145,12 @@
 ;; RSS
 ;;
 
-(defn node-reader [root]
-  (fn [k] (xml-zip/xml1-> root k xml-zip/text)))
+(defn node-reader [root k]
+  (xml-zip/xml1-> root k xml-zip/text))
 
 (defn- rss-item-node-to-entry [item]
   (let [item-root (zip/xml-zip item)
-	get-text (node-reader item-root)]
+	get-text (partial node-reader item-root)]
     {:title
      (get-text :title)
      :link
@@ -169,7 +169,7 @@
      (get-text :author)}))
 
 (defn- rss-feed-meta [root]
-  (let [get-text (node-reader root)])
+  (let [get-text (partial node-reader root)])
   {:title
    (xml-zip/xml1-> root :channel :title xml-zip/text)
    :des
@@ -369,17 +369,33 @@
 		:when l
 		:let [attr (attr-map l)
 		      #^String type (:type attr)
-		      #^String link (->> attr :href
+		      #^String link (->> attr
+					 :href
+					 (.trim)
 					 (fix-link
 					  (host-url (str page-url))))]
 		:when (good-rss? link type)]
-	    link))]
+	   link))]
     (into #{} (remove nil? rss-feeds))))
 
-(def ^{:doc "Avoid subscribing to multiple feeds on the same blog.
+(defn attempt-rss2
+  "attempt to get an rss2 feed if this is an rss feed"
+  [u]
+  (if (and u (.endsWith u "rss"))
+    (let [rss2 (str u "2")]
+      (if (exists? rss2)
+	rss2
+	u))
+    u))
+
+(defn ^{:doc "Avoid subscribing to multiple feeds on the same blog.
 Initial heuristic is to take url with min length.
 May not be a good idea for blogs that have many useful feeds, for example, for a news site like NYT."}
-     canonical-feed (comp min-length host-rss-feeds))
+     canonical-feed [& args]
+     (let [fds (apply host-rss-feeds args)]
+       (-> fds
+	min-length
+	attempt-rss2)))
 
 ;;
 ;; Feed outlink crawling
