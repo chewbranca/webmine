@@ -46,8 +46,9 @@
     (doto conn
       (.setInstanceFollowRedirects false)
 	       (.connect))
-	(or (.getHeaderField conn "Location")
-	    u)))
+    (if-let [expanded (.getHeaderField conn "Location")]
+      (recur expanded)
+      u)))
 
 ;;http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener
 

@@ -8,6 +8,12 @@
         [webmine.parser :only [charset dom]])
   (:import (org.apache.commons.io IOUtils)))
 
+(defn strip-punc [s]
+  (let [strip
+	(some identity (map #(.endsWith s %)
+			    [";" ":" "." ","]))]
+    (if strip (.substring s 0 (- (.length s) 1)))))
+
 (defn wrap-html-body
   [client]
   (fn [req]
@@ -17,6 +23,7 @@
               charset (or (-?> (headers "content-type")
                                (split #"=")
                                second
+			       strip-punc
                                trim)
                           (charset (dom (String. b "UTF-8")))
                           "UTF-8")]
@@ -47,11 +54,6 @@
   (request (merge req {:method :get
                        :url url})))
 
-;; From l.fetcher
 (defn body-str [u]
-  (try (:body (get (str u)))
-       (catch java.lang.Exception _ nil)))
-
-(defn header-str [u]
   (try (:body (get (str u)))
        (catch java.lang.Exception _ nil)))

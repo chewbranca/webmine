@@ -118,10 +118,6 @@
   (assoc e :body
 	 (:body (http/get (:link e)))))
 
-;;
-;; Entry Supplements: Text, Image
-;;
-
 (defn with-image [e]
   (imgs/with-best-img e :link :body))
 
@@ -140,10 +136,6 @@
 (defn- root-> [source f]
   (when-let [root (-> source parse zip/xml-zip)]
     (f root)))
-
-;;
-;; RSS
-;;
 
 (defn node-reader [root k]
   (xml-zip/xml1-> root k xml-zip/text))
@@ -206,10 +198,6 @@
   (let [feed-meta (rss-feed-meta root)]
     (assoc feed-meta :entries (rss-feed-entries root))))
 
-;;
-;; Atom
-;;
-
 (defn- atom-item-node-to-entry [node]
   {:date (find-first
 	  (map
@@ -241,14 +229,9 @@
    (xml-zip/xml1-> root :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))})
 
 ;;TODO:  make this case work: view-source:http://cityroom.blogs.nytimes.com/feed/
-;;use feed-
 (defn- parse-atom [root]
   (assoc (atom-feed-meta root)
     :entries (map atom-item-node-to-entry (xml-zip/xml-> root :entry))))
-
-;;
-;; Feed (RSS or ATOM)
-;;
 
 (defn ensure-title [feed]
   (if (:title feed)
@@ -339,25 +322,69 @@
   (and (internal? home other)
        (feed? other)))
 
+(defn- bad-ext? [link]
+  (or  (.contains link "comments")
+       (.endsWith link "xmlrpc.php")
+       (.endsWith link "osd.xml")
+       (.endsWith link "/opensearch.xml")))
+
+(defn- good-feed-name? [n]
+  (or (.contains n "rss")
+      (.contains n "atom")))
+
 (defn good-rss?
-  [link type]
-  (and link
+  ([link] (good-rss? link nil))
+  ([link type]
+     (or
+      (and
+       link
+       (not type)
+       (not (bad-ext? link))
+       (good-feed-name? link))
+      (and
+       link
        type
-       (or (.contains type "rss")
-	   (.contains type "atom")
-	   (.contains link "rss")
-	   (.contains link "atom"))
-       (not (.contains link "comments"))
-       (not (.endsWith link "xmlrpc.php"))
-       (not (.endsWith link "osd.xml"))
-       (not (.endsWith link "/opensearch.xml"))))
+       (not (bad-ext? link))
+       (or (good-feed-name? link)
+	   (good-feed-name? type))))))
 
 (defn fix-link
   "fix absolute links"
   [base #^String link]
-  (if (and link (.startsWith link "/"))
-    (str base link)
-    link))
+  (when link
+    (let [l (.trim link)]
+      (if (.startsWith link "/")
+	(str base link)
+	link))))
+
+;;TODO: factor out duplciaiton between good-feed-elements and good-feed-links
+(defn good-feed-elements
+  [page-url all-links]
+  (into #{}
+	(remove nil? 
+		(for [l all-links
+		      :when l
+		      :let [attr (attr-map l)
+			    #^String type (:type attr)
+			    #^String link
+			    (->> attr
+				 :href
+				 (fix-link
+				  (host-url (str page-url))))]
+		      :when (good-rss? link type)]
+		  link))))
+
+(defn good-feed-links
+  [page-url all-links]
+  (into #{}
+	(remove nil? 
+		(for [l all-links
+		      :when l
+		      :let [#^String link
+			    (fix-link
+			     (host-url (str page-url)) l)]
+		      :when (good-rss? link)]
+		  link))))
 
 (defn host-rss-feeds
   "checks head of page for rss feed links. Does two checks, any links
@@ -365,22 +392,13 @@
    any link has rss xml or  "
   [page-url & [body]]
   ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
-  (let [body (or body (http/header-str page-url))
+  (let [body (or body (http/body-str page-url))
 	d (dom body)
-	rss-feeds
-	(when-let [all-links (elements d "link")]
-	  (for [l all-links
-		:when l
-		:let [attr (attr-map l)
-		      #^String type (:type attr)
-		      #^String link (->> attr
-					 :href
-					 (.trim)
-					 (fix-link
-					  (host-url (str page-url))))]
-		:when (good-rss? link type)]
-	   link))]
-    (into #{} (remove nil? rss-feeds))))
+	element-feeds (good-feed-elements
+		       page-url (elements d "link"))]
+    (if (not (empty? element-feeds))
+      element-feeds
+      (good-feed-links page-url (map str (url-seq body))))))
 
 (defn attempt-rss2
   "attempt to get an rss2 feed if this is an rss feed"
@@ -467,14 +485,7 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
   (fetch-entries "http://www.rollingstone.com/siteServices/rss/allNews")
   (compact-date-time "Sun, 31 Oct 2010 03:03:00 EDT")
   (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
-  (canonical-feed "http://www.rollingstone.com/")
-  (canonical-feed "http://techcrunch.com/2010/11/02/andreessen-horowitz-650m-fund/")
-					; This one requires fix-link, otherwise doesn't work
-  (canonical-feed "http://npr.org")
   (fetch-entries "http://scripting.com/rss.xml")
   (fetch-entries "http://feeds.nytimes.com/nyt/rss/HomePage")
-  (canonical-feed "http://io9.com/")
   (fetch-entries "http://feeds.feedburner.com/oreilly/news")
-  (fetch-entries "http://feeds.feedburner.com/oreilly/news")
-  
-  (canonical-feed "http://www.huffingtonpost.com/"))
+  (fetch-entries "http://feeds.feedburner.com/oreilly/news"))
