@@ -1,5 +1,5 @@
 (ns webmine.feeds
-  (:use clojure.xml
+  (:use [clojure.xml :only [parse]]
         clojure.set
         clojure.contrib.java-utils
         webmine.readability
@@ -157,7 +157,7 @@
      (get-text :link)
      :content
      (apply max-key count
-	    (map get-text [:content :description :content:encoded]))
+            (map get-text [:content :description :content:encoded]))
      :des
      (first (filter identity
 		    (map get-text [:description :content :content:encoded])))
@@ -166,7 +166,9 @@
 		  :let [s (get-text k)]
 		  :when s] s))
      :author
-     (get-text :author)}))
+     (first (filter identity
+                    (map #(get-text %)
+                         [:author :dc:creator])))}))
 
 (defn- rss-feed-meta [root]
   (let [get-text (partial node-reader root)])
@@ -184,13 +186,15 @@
    (xml-zip/xml1-> root :channel :link xml-zip/text)})
 
 (defn- rss-feed-entries [root]
-  (let [get-items (fn [k] (xml-zip/xml-> root :channel k zip/node))
-	nodes (find-first (complement empty?)
-			  [(get-items :item) (get-items :entry)])]
+  (let [rss2-items (fn [k] (xml-zip/xml-> root :channel k zip/node))
+        rss1-items (fn [k] (xml-zip/xml-> root k zip/node))
+        nodes (find-first (complement empty?)
+                          [(rss1-items :item) (rss1-items :entry)
+                           (rss2-items :item) (rss2-items :entry)])]
     (for [n nodes
-	  :let [entry (into {}
-			    (filter second
-				    (rss-item-node-to-entry n)))]]
+          :let [entry (into {}
+                            (filter second
+                                    (rss-item-node-to-entry n)))]]
       entry)))
 
 (defn- parse-rss [root]
@@ -220,7 +224,7 @@
    :link (xml-zip/xml1-> node :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))
    :des (xml-zip/xml1-> node :summary xml-zip/text)
    :content (xml-zip/xml1-> node :content xml-zip/text)})
-
+ 
 
 (defn- atom-feed-meta [root]
   {:title
@@ -260,20 +264,20 @@
 
 (defn parse-feed [url-or-source]
   (let [source (if (or (instance? java.net.URL url-or-source)
-		       (.startsWith ^String url-or-source "http"))
-		 (slurp url-or-source)
-		 url-or-source)
-	root (-> ^String source (.getBytes "UTF-8") java.io.ByteArrayInputStream.
-		 parse
-		 zip/xml-zip)]
-    (-> (cond
-	 (xml-zip/xml1-> root :channel) (parse-rss root)
-	 (xml-zip/xml-> root :entry) (parse-atom root)
-	 :default
-	 (RuntimeException. "Unknown feed format"))
-	;; Ensure date compacted
-	(update-in [:date] compact-date-time)
-	ensure-title)))
+                       (.startsWith ^String url-or-source "http"))
+                 (slurp url-or-source)
+                 url-or-source)
+        root (-> ^String source (.getBytes "UTF-8") java.io.ByteArrayInputStream.
+                 parse
+                 zip/xml-zip)]
+    (-> (cond 
+         (xml-zip/xml1-> root :channel) (parse-rss root)
+         (xml-zip/xml-> root :entry) (parse-atom root)
+         :default
+         (RuntimeException. "Unknown feed format"))
+        ;; Ensure date compacted
+        (update-in [:date] compact-date-time)
+        ensure-title)))
 
 (defn- entries [url]
   "
