@@ -59,3 +59,8 @@
   (are [a r] (= a (expand-relative-url "https://foo.com/bar/baz" r))
        "https://foo.com/moo" "/moo"
        "https://foo.com/bar/moo" "moo"))
+
+(deftest multi-redirect
+  (is (=
+       "http://techcrunch.com/2010/01/05/techcrunch-giveaway-a-google-nexus-one-techcrunch/"
+       (expand "http://bit.ly/4XzVxm"))))
