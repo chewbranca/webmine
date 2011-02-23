@@ -42,10 +42,10 @@
 
 (deftest best-dev-wordcount
   (is (= 1126
-	 (body-words "http://www.latimes.com/news/nationworld/world/la-fg-muslim-brotherhood-20110131,0,5283199.story")))
+         (body-words "http://www.latimes.com/news/nationworld/world/la-fg-muslim-brotherhood-20110131,0,5283199.story")))
   (is (= 419
-	 (body-words "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))
+         (body-words "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))
   (is (= 1106
-	 (body-words "http://www.huffingtonpost.com/arianna-huffington/post_1098_b_770178.html")))
+         (body-words "http://www.huffingtonpost.com/arianna-huffington/post_1098_b_770178.html")))
   (is (= 959
-	 (body-words "http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html"))))
+         (body-words "http://measuringmeasures.com/blog/2010/10/11/deploying-clojure-services-with-crane.html"))))

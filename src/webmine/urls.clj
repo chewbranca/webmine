@@ -45,9 +45,18 @@
   (with-http-conn [conn u]
     (doto conn
       (.setInstanceFollowRedirects false)
-	       (.connect))
-    (if-let [expanded (.getHeaderField conn "Location")]
-      (recur expanded)
+      (.connect))
+    (if-let [loc (.getHeaderField conn "Location")]
+      (do
+        (let [url (.getURL conn)
+              expanded (if (.startsWith loc "http")
+                         loc
+                         (let [expu (str (URL. (.getProtocol url)
+                                               (.getHost url)
+                                               (.getPort url)
+                                               loc))]
+                           expu))]
+          (recur expanded)))
       u)))
 
 ;;http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener

@@ -42,15 +42,15 @@
   (is (= ["http://blog.revolutionanalytics.com"
           "http://www.iaventures.com"
           "http://www.readwriteweb.com"]
-         (sort
-          (map str 
-               (unique-hosts
-                [(url "http://www.iaventurepartners.com")
-                 (url "http://blog.revolution-computing.com")
-                 (url "http://blog.revolution-computing.com")
-                 (url "http://www.readwriteweb.com")
-                 (url "http://www.readwriteweb.com")
-                 (url "http://toolegit.cn")]))))))
+           (sort
+            (map str 
+                 (unique-hosts
+                  [(url "http://www.iaventurepartners.com")
+                   (url "http://blog.revolution-computing.com")
+                   (url "http://blog.revolution-computing.com")
+                   (url "http://www.readwriteweb.com")
+                   (url "http://www.readwriteweb.com")
+                   (url "http://toolegit.cn")]))))))
 
 (deftest test-expand-relative-url
   (are [a r] (= a (expand-relative-url "http://foo.com/bar/baz" r))
@@ -61,6 +61,9 @@
        "https://foo.com/bar/moo" "moo"))
 
 (deftest multi-redirect
-  (is (=
-       "http://techcrunch.com/2010/01/05/techcrunch-giveaway-a-google-nexus-one-techcrunch/"
-       (expand "http://bit.ly/4XzVxm"))))
+  (is (= "http://techcrunch.com/2010/01/05/techcrunch-giveaway-a-google-nexus-one-techcrunch/"
+         (expand "http://bit.ly/4XzVxm")))
+  (is (= "http://io9.com/#!5616394/all-the-books-youll-be-lusting-for-this-fall-season"
+         (expand "http://bit.ly/9hkePJ")))
+  (is (= "http://www.iaventures.com"
+         (expand "http://www.iaventurepartners.com"))))
