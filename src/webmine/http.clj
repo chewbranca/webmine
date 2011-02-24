@@ -33,7 +33,7 @@
 (defn wrap-request
   [request]
   (-> request
-      (clj-http.client/wrap-client (clj-http/pooled-http-client))
+      clj-http.client/wrap-client
       clj-http.client/wrap-redirects
       clj-http.client/wrap-exceptions
       clj-http.client/wrap-decompression
