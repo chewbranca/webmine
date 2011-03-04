@@ -11,7 +11,7 @@
                  [infer "1.0-SNAPSHOT"]
                  [woven/clj-http "0.1.2-chunked-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
-                 [work "0.2.3-SNAPSHOT"]
+                 [work "0.2.6-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]
                  [clj-sys/plumbing "0.1.3-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
