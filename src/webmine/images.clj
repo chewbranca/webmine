@@ -159,35 +159,37 @@
   (imgs (dom (:body (cl/get u)))))
 
 (defn best-img
-  [u content & [min]]
-  (let [d (dom content)
-	core-imgs (imgs (readability-div d))]
-    (if (empty? core-imgs) nil
-	(let [eis (expand-relative-urls u core-imgs)
-	      ;;ensure we have sizes for all images.
-	      sized (fetch-content-sizes eis)
-	      sizes (if min (filter (fn [i] (>= (:content-size i) min)) sized) sized)]
-	  (when-not (empty? sizes) 
-	    ;;take the first image we find that has no follow image that is larger than twice it's size.
-	    (when-let [best (reduce (fn [best next]
-				      (if (> (:content-size next)
-					     (* (:content-size best) 2))
-					next
-					best))
-				    sizes)]
-	      (assoc best
-		:size (img-size (:url best)))))))))
+  ([u] (best-img u nil))
+  ([u opts] (best-img u (slurp u) opts))
+  ([u content {:keys [min, height-backoff] :or {min 0 height-backoff 0}}]
+     (let [d (dom content)	   
+	   core-imgs (loop [n (readability-div d) count 0]
+		       (let [node-imgs (imgs n)]
+			 (if (or (>= count height-backoff)
+				 (not (empty? node-imgs)))
+			   node-imgs
+			   (recur (.getParentNode n) (inc count)))))]
+       (when-not (empty? core-imgs)
+	 (let [eis (expand-relative-urls u core-imgs)
+	       ;;ensure we have sizes for all images.
+	       sized (fetch-content-sizes eis)
+	       sizes (if min (filter (fn [i] (>= (:content-size i) min)) sized) sized)]
+	   (when-not (empty? sizes) 
+	     ;;take the first image we find that has no follow image that is larger than twice it's size.
+	     (when-let [best (reduce (fn [best next]
+				       (if (> (:content-size next)
+					      (* (:content-size best) 2))
+					 next
+					 best))
+				     sizes)]
+	       (assoc best
+		 :size (img-size (:url best))))))))))
 
-(defn best-img-at
-  ([u min]
-     (best-img u (:body (cl/get u)) min))
-  ([u] (best-img-at u nil)))
-
-(defn with-best-img [m url-key content-key & [min]]
+(defn with-best-img [m url-key content-key & {:as opts}]
   (let [img (try
 	      (best-img (url-key m)
 			(content-key m)
-			min)
+			opts)
 	      (catch java.lang.Exception _ nil))]
   (assoc m :img img)))
 
