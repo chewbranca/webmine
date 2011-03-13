@@ -67,3 +67,9 @@
          (expand "http://bit.ly/9hkePJ")))
   (is (= "http://www.iaventures.com"
          (expand "http://www.iaventurepartners.com"))))
+
+(deftest ensure-proper-url-test
+  (is (= "http://host.com/path"
+         (ensure-proper-url "/path" "http" "host.com")))
+  (is (= "https://bar.com/path/no/lead"
+         (ensure-proper-url "path/no/lead" "https" "bar.com"))))

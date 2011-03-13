@@ -10,8 +10,22 @@
   "Creates a URL. Returns nil if the url specifies and unkown protocol."
   [link] 
   (if (instance? java.net.URL link) link
-  (try (java.net.URL. link)
-    (catch MalformedURLException _ nil))))
+      (try (java.net.URL. link)
+           (catch MalformedURLException _ nil))))
+
+(defn ensure-proper-url
+  "A URL in a response's location field is not always a full URL.
+   This function takes a default protocol and host-port that can be used to
+   construct a valid URL if u is invalid."
+  [u default-protocol default-host-port]
+  (cond (.startsWith u "/")
+        (format "%s://%s%s" default-protocol default-host-port u)
+
+        (not (.startsWith u "http"))
+        (format "%s://%s/%s" default-protocol default-host-port u)
+
+        :default
+        u))
 
 (defmacro url-danger [& body]
   `(try
@@ -41,22 +55,23 @@
 ;;TODO: lots of duplicaiton below: refactor
 ;;http://philippeadjiman.com/blog/2009/09/07/the-trick-to-write-a-fast-universal-java-url-expander/
 (defn expand [u]
-  ;using proxy may increase latency
+  ;; using proxy may increase latency
   (with-http-conn [conn u]
     (doto conn
       (.setInstanceFollowRedirects false)
       (.connect))
     (if-let [loc (.getHeaderField conn "Location")]
-      (do
-        (let [url (.getURL conn)
-              expanded (if (.startsWith loc "http")
-                         loc
-                         (let [expu (str (URL. (.getProtocol url)
-                                               (.getHost url)
-                                               (.getPort url)
-                                               loc))]
-                           expu))]
-          (recur expanded)))
+      (let [url (.getURL conn)
+            host (let [port (.getPort url)]
+                   (if (= -1 port)
+                     (.getHost url)
+                     (format "%s:%d" (.getHost url) port)))
+            expanded (if (.startsWith loc "http")
+                       loc
+                       (ensure-proper-url loc
+                                          (.getProtocol url)
+                                          host))]
+        (recur expanded))
       u)))
 
 ;;http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener
