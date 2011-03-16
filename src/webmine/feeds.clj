@@ -200,13 +200,13 @@
 
 (defn- atom-item-node-to-entry [node]
   {:date (find-first
-	  (map
-	   (fn [k] (-> (xml-zip/xml1-> node k xml-zip/text)))
-	   [:updated
-	    :modified
-	    :created
-	    :published
-	    :issued]))
+          (map
+           (fn [k] (-> (xml-zip/xml1-> node k xml-zip/text)))
+           [:updated
+            :modified
+            :created
+            :published
+            :issued]))
    :author (xml-zip/xml1-> node :author :name xml-zip/text)
    :title (xml-zip/xml1-> node :title xml-zip/text)
    :link (xml-zip/xml1-> node :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))
@@ -262,6 +262,8 @@
          (RuntimeException. "Unknown feed format"))
         ;; Ensure date compacted
         (update-in [:date] compact-date-time)
+        (update-in [:entries] (fn [es] (map #(update-in % [:date] compact-date-time)
+                                            es)))
         ensure-title)))
 
 (defn- entries [url]

@@ -60,6 +60,15 @@
        "https://foo.com/bar/moo" "moo"))
 
 (deftest multi-redirect
-  (is (=
-       "http://techcrunch.com/2010/01/05/techcrunch-giveaway-a-google-nexus-one-techcrunch/"
-       (expand "http://bit.ly/4XzVxm"))))
+  (is (= "http://techcrunch.com/2010/01/05/techcrunch-giveaway-a-google-nexus-one-techcrunch/"
+         (expand "http://bit.ly/4XzVxm")))
+  (is (= "http://io9.com/#!5616394/all-the-books-youll-be-lusting-for-this-fall-season"
+         (expand "http://bit.ly/9hkePJ")))
+  (is (= "http://www.iaventures.com"
+         (expand "http://www.iaventurepartners.com"))))
+
+(deftest ensure-proper-url-test
+  (is (= "http://host.com/path"
+         (ensure-proper-url "/path" "http" "host.com")))
+  (is (= "https://bar.com:8443/path/no/lead"
+         (ensure-proper-url "path/no/lead" "https" "bar.com:8443"))))
