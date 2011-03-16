@@ -1,6 +1,8 @@
 (ns webmine.readability-test  
-  (:require [clj-http.client :as http])
-  (:use clojure.test webmine.readability webmine.parser))
+  (:use clojure.test
+	webmine.readability
+	html-parse.parser
+	[fetcher.client :only [request]]))
 
 (deftest format-plain-text-content-test
   (is (= (-> "Hi.<p>New paragraph" dom format-plain-text-content)
@@ -37,11 +39,11 @@
   (count (re-seq word-re
 		 (clean-text
 		  (readability-div
-		   (webmine.parser/dom
-		    (:body (http/get url))))))))
+		   (dom
+		    (:body (request :get url))))))))
 
 (deftest best-dev-wordcount
-  (is (= 1126
+  (is (= 1107
 	 (body-words "http://www.latimes.com/news/nationworld/world/la-fg-muslim-brotherhood-20110131,0,5283199.story")))
   (is (= 419
 	 (body-words "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))

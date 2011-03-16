@@ -37,7 +37,6 @@
   (is (= ["http://www.theamericanscholar.org" "http://www.well.com"]
 	 (sort (map str 
 		    (unique-hosts [(url "http://bit.ly/bkuH97")
-
 				   (url "http://bit.ly/1Dpk5")])))))
   (is (= ["http://blog.revolutionanalytics.com"
           "http://www.iaventures.com"
@@ -45,7 +44,7 @@
          (sort
           (map str 
                (unique-hosts
-                [(url "http://www.iaventurepartners.com")
+                [(url "http://www.iaventures.com")
                  (url "http://blog.revolution-computing.com")
                  (url "http://blog.revolution-computing.com")
                  (url "http://www.readwriteweb.com")
