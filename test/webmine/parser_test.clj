@@ -48,6 +48,10 @@
 <title>Zemřel Pavel Vondruška, muzikant a jeden z 'Cimrmanů' - www.lidovky.cz</title>
 </head><body></body></html>")))))
 
+(deftest replace-unicode-control-test
+  (is (= "hi\u000aand\u000abye"
+         (replace-unicode-control "hi\u2028and\u2029bye"))))
+
 (def html-with-garbage
 "
 <html>

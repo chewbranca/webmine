@@ -321,3 +321,10 @@ returns a map with the values at those keys scrubbed down to clean text."
           last
           str/trim)
       nil)))
+
+(defn replace-unicode-control
+  [^String s]
+  (when s
+    (-> s
+        (.replace \u2028 \u000a)
+        (.replace \u2029 \u000a))))
