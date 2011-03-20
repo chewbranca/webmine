@@ -10,7 +10,7 @@
 	[infer.core :only [max-by min-by]]
         [clojure.contrib.def :only [defvar-]])
   (:require [clojure.string :as clj-str]
-            [webmine.parser :as parser])
+            [html-parse.parser :as parser])
   (:import [org.apache.xerces.dom ElementNSImpl]
 	   [org.w3c.dom Node Element]))
 

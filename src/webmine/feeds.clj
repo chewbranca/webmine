@@ -3,14 +3,14 @@
         clojure.set
         clojure.contrib.java-utils
         webmine.readability
-        webmine.parser
+        html-parse.parser
         webmine.urls
         webmine.core
         mochi.nlp.process.sent-splitter
         [plumbing.core]
-        [clojure.java.io :only [input-stream]])
+        [clojure.java.io :only [input-stream]]
+	[fetcher.client :only [request]])
   (:require [work.core :as work]
-            [webmine.http :as http]
             [clojure.zip :as zip]
             [webmine.images :as imgs]
             [clojure.contrib.logging :as log]
@@ -116,7 +116,7 @@
   "Takes an entry.  assocs' in the body of the link."
   [e]
   (assoc e :body
-	 (:body (http/get (:link e)))))
+	 (:body (request :get (:link e)))))
 
 (defn with-image [e]
   (imgs/with-best-img e :link :body))
@@ -250,7 +250,9 @@
                        (.startsWith ^String url-or-source "http"))
                  (slurp url-or-source)
                  url-or-source)
-        root (-> ^String source (.getBytes "UTF-8") java.io.ByteArrayInputStream.
+        root (-> ^String source
+		 (.getBytes "UTF-8")
+		 java.io.ByteArrayInputStream.
                  parse
                  zip/xml-zip)]
     (-> (cond 
@@ -394,7 +396,7 @@
    any link has rss xml or  "
   [page-url & [body]]
   ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
-  (let [body (or body (http/body-str page-url))
+  (let [body (or body (:body (request :get (str page-url))))
 	d (dom body)
 	element-feeds (good-feed-elements
 		       page-url (elements d "link"))]
@@ -458,7 +460,7 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
 
 (defn home-feed-outlinks
   [u]
-  (find-feed-outlinks (http/body-str u) u))
+  (find-feed-outlinks (:body (request :get u)) u))
 
 (defn entry-feed-outlinks
   "given the url of a blog's feed, find the outlinks to feeds from all the entries currently in this blog's feed."
