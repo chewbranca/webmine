@@ -100,16 +100,16 @@
    fields present. returns entry with :des field"
   [entry]
   (let [min-sentences 3
-	d (:des entry)
-	c (:content entry)
-	t (:text entry)
-	des (->> (if (and d
-		       (>= (count-sentences (clean-text (dom d)))
-			   min-sentences))
-		  d t)
-		dom
-		clean-text
-		(first-k-sentences min-sentences))]
+        d (:des entry)
+        c (:content entry)
+        t (:text entry)
+        des (->> (if (and d
+                          (>= (count-sentences (clean-text (dom d)))
+                              min-sentences))
+                   d t)
+                 dom
+                 clean-text
+                 (first-k-sentences min-sentences))]
     (assoc entry :des des)))
 
 (defn fetch-body
@@ -123,12 +123,13 @@
 
 (defn with-text [e]
   (assoc e :text
-	 (-> e
-	     :body
-	     dom
-	     readability-div
-	     pretty-dom
-	     html-str2)))
+         (-> e
+             :body
+             dom
+             readability-div
+             pretty-dom
+             clean-text
+             html-str2)))
 
 (defn complete-entry [e]
   (-x> e with-text with-des with-image))
