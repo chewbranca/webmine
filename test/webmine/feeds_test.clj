@@ -60,6 +60,10 @@
      (merge good-tc
 {:des "Computer power management software company, 1E has released a new version of its marquee product, NightWatchman. Like its predecessors, version 6.0, helps corporations manage their network of computers to optimize energy efficiency. It gives IT managers the ability to remotely power down computers and establish energy-saving settings (ie."}))
 
+(deftest with-text-test
+  (is (= {:text "<html xmlns:html=\"http://www.w3.org/1999/xhtml\">\n<body>Hey There!</body>\n</html>", :body "<html><script>ignore</script>Hey There!</html>"}
+        (with-text {:body "<html><script>ignore</script>Hey There!</html>"}))))
+
 (deftest des-tests
   (is (= (:des bad-tc-fixed)
 	 (:des (with-des bad-tc))))

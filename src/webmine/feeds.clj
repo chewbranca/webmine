@@ -129,6 +129,7 @@
              readability-div
              pretty-dom
              clean-text
+	     dom
              html-str2)))
 
 (defn complete-entry [e]
