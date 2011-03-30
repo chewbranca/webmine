@@ -42,9 +42,13 @@
 		   (dom
 		    (:body (request :get url))))))))
 
+(defn get-body [url]
+  (clean-text
+   (readability-div
+    (dom
+     (:body (request :get url))))))
+
 (deftest best-dev-wordcount
-  (is (= 1107
-	 (body-words "http://www.latimes.com/news/nationworld/world/la-fg-muslim-brotherhood-20110131,0,5283199.story")))
   (is (= 419
          (body-words "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))
   (is (= 1106

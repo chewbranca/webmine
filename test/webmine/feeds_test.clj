@@ -69,12 +69,9 @@
 	 (:des (with-des bad-tc))))
   (is (= (:des good-tc-fixed)
 	 (:des (with-des good-tc))))
-  (is (= "PayPal abruptly went down for over an hour Friday morning, stalling transactions for all its customers.\n\nThe outage affected PayPal's API, so customers attempting to make or receive payments between 8-9:30am Pacific time this morning received an error message, \"Sorry - your last action could not be completed.\"\n\nAlthough the issue was filed as \"resolved\" as of 9:24am Pacific time Friday, PayPal's customer service Twitter page recently tweeted that it was addressing new issues, in response to a user whose credit cards were being declined."
-       (:des
-	  (complete-entry
-	   (fetch-body
-	    {:link
-	    "http://www.pcmag.com/article2/0,2817,2371772,00.asp?kc=PCRSS05079TX1K0000993"}))))))
+  (is (= "PayPal abruptly went down for over an hour Friday morning, stalling transactions for all its customers. The outage affected PayPal's API, so customers attempting to make or receive payments between 8-9:30am Pacific time this morning received an error message. Although the issue was filed as resolved as of 9:24am Pacific time Friday, PayPal's customer service Twitter page recently tweeted that it was addressing new issues, in response to a user whose credit cards were being declined." 
+	 (:des
+	  (with-des {:text "PayPal abruptly went down for over an hour Friday morning, stalling transactions for all its customers. The outage affected PayPal's API, so customers attempting to make or receive payments between 8-9:30am Pacific time this morning received an error message. Although the issue was filed as resolved as of 9:24am Pacific time Friday, PayPal's customer service Twitter page recently tweeted that it was addressing new issues, in response to a user whose credit cards were being declined. Because so many were affected, PayPal began live-blogging its progress. Despite today's disruption, PayPal has been experiencing a solid growth year. Last week, parent company eBay reported that PayPal's third quarter revenue was up 22 percent year-on-year, boosting the company's overall performance. The site added one million new customer accounts every month last quarter, for a total revenue of $817 million. On Tuesday, PayPal introduced several new initiatives at the PayPal X Innovate developer's conference in San Francisco: an e-payment app with Discovery, micropayments for virtual goods, and a mobile express checkout service."})))))
 
 (deftest date-parsing
   ;; Ensure that the datetime key strings are canonicalized to the
