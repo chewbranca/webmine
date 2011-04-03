@@ -7,7 +7,8 @@
         webmine.urls
         webmine.core
         mochi.nlp.process.sent-splitter
-        [plumbing.core]
+        plumbing.core
+        plumbing.error
         [clojure.java.io :only [input-stream]]
 	[fetcher.client :only [request]])
   (:require [work.core :as work]
@@ -52,12 +53,14 @@
   (first
    (concat
     (for [#^SimpleDateFormat sdf rfc822-rss-formats
-	  :let [d (silent
-		   #(.parse sdf (.trim s) (ParsePosition. 0)))]
+	  :let [d (try
+		    (.parse sdf (.trim s) (ParsePosition. 0))
+		    (catch java.lang.Exception _ nil))]
 	  :when d]
       (-> d time-coerce/from-date time-coerce/to-string))
     (for [fmt (vals time-fmt/formatters)
-	  :let [d (silent #(time-fmt/parse fmt s))]
+	  :let [d (try (time-fmt/parse fmt s)
+		       (catch java.lang.Exception _ nil))]
 	  :when d] (-> d time-coerce/to-string)))))
 
 ;; 

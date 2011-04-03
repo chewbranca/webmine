@@ -1,7 +1,7 @@
 (ns webmine.urls
   (:require [work.core :as work])
   (:use [webmine.core]
-        [plumbing.core :only [maybe-comp]])
+        [plumbing.error :only [maybe-comp]])
   (:import (java.net URL InetAddress
                      MalformedURLException UnknownHostException
                      HttpURLConnection Proxy)))

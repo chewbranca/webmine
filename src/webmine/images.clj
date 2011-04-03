@@ -5,6 +5,7 @@
         html-parse.parser
 	[clojure.contrib.profile :only [prof]]
 	[fetcher.client :only [request]]
+	plumbing.error
 	plumbing.core)
   (:require [work.core :as work])
   (:import [org.w3c.dom Node Attr])
@@ -95,7 +96,8 @@
 ;;(big-img (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))))
 
 (defn read-img [u]
-  (silent #(ImageIO/read %) u))
+  (try (ImageIO/read u)
+       (catch java.lang.Exception _ nil)))
 
 (defn ^BufferedImage
   fetch-img [u]
