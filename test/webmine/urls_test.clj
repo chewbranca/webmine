@@ -68,6 +68,14 @@
   (is (= "http://www.iaventures.com"
          (expand "http://www.iaventurepartners.com"))))
 
+(deftest redirect-depth-test
+  (is (= "http://www.iaventurepartners.com"
+         (expand "http://www.iaventurepartners.com"
+                 :redirects 0)))
+  (is (= "http://tcrn.ch/6c8AU4"
+         (expand "http://bit.ly/4XzVxm"
+                 :redirects 1))))
+
 (deftest redirect-cookie-test
   (is (= "http://yfrog.com/h4e2xjj"
          ((with-timeout 10 #(expand "http://yfrog.com/h4e2xjj"))))))
