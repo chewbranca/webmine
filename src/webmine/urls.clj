@@ -52,13 +52,16 @@
   [link]
   (url-danger (.openStream (url link))))
 
+
 ;;TODO: lots of duplicaiton below: refactor
 ;;http://philippeadjiman.com/blog/2009/09/07/the-trick-to-write-a-fast-universal-java-url-expander/
-(defn expand [u]
+(defn expand [u & {:keys [cookie]
+                   :or {cookie ""}}]
   ;; using proxy may increase latency
   (with-http-conn [conn u]
     (doto conn
       (.setInstanceFollowRedirects false)
+      (.setRequestProperty "Cookie" cookie)
       (.connect))
     (if-let [loc (.getHeaderField conn "Location")]
       (let [url (.getURL conn)
@@ -70,8 +73,9 @@
                        loc
                        (ensure-proper-url loc
                                           (.getProtocol url)
-                                          host))]
-        (recur expanded))
+                                          host))
+            set-cookie (.getHeaderField conn "Set-Cookie")]
+        (recur expanded {:cookie set-cookie}))
       u)))
 
 ;;http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener
