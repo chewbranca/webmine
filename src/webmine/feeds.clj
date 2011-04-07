@@ -425,8 +425,8 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
      canonical-feed [& args]
      (let [fds (apply host-rss-feeds args)]
        (-> fds
-	min-length
-	attempt-rss2)))
+           min-length
+           attempt-rss2)))
 
 ;;
 ;; Feed outlink crawling

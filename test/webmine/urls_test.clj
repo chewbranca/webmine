@@ -1,6 +1,7 @@
 (ns webmine.urls-test
   (:use clojure.test
-        webmine.urls)
+        webmine.urls
+        [plumbing.core :only [with-timeout]])
   (:import (java.net URL MalformedURLException)))
 
 (deftest test-url
@@ -37,7 +38,7 @@
   (is (= ["http://www.theamericanscholar.org" "http://www.well.com"]
 	 (sort (map str 
 		    (unique-hosts [(url "http://bit.ly/bkuH97")
-				   (url "http://bit.ly/1Dpk5")])))))
+                           (url "http://bit.ly/1Dpk5")])))))
   (is (= ["http://blog.revolutionanalytics.com"
           "http://www.iaventures.com"
           "http://www.readwriteweb.com"]
@@ -49,7 +50,7 @@
                  (url "http://blog.revolution-computing.com")
                  (url "http://www.readwriteweb.com")
                  (url "http://www.readwriteweb.com")
-                 (url "http://toolegit.cn")]))))))
+                 (url "invalid-url")]))))))
 
 (deftest test-expand-relative-url
   (are [a r] (= a (expand-relative-url "http://foo.com/bar/baz" r))
@@ -66,6 +67,18 @@
          (expand "http://bit.ly/9hkePJ")))
   (is (= "http://www.iaventures.com"
          (expand "http://www.iaventurepartners.com"))))
+
+(deftest redirect-depth-test
+  (is (= "http://www.iaventurepartners.com"
+         (expand "http://www.iaventurepartners.com"
+                 :redirects 0)))
+  (is (= "http://tcrn.ch/6c8AU4"
+         (expand "http://bit.ly/4XzVxm"
+                 :redirects 1))))
+
+(deftest redirect-cookie-test
+  (is (= "http://yfrog.com/h4e2xjj"
+         ((with-timeout 10 #(expand "http://yfrog.com/h4e2xjj"))))))
 
 (deftest ensure-proper-url-test
   (is (= "http://host.com/path"

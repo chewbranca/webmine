@@ -52,27 +52,35 @@
   [link]
   (url-danger (.openStream (url link))))
 
+
 ;;TODO: lots of duplicaiton below: refactor
 ;;http://philippeadjiman.com/blog/2009/09/07/the-trick-to-write-a-fast-universal-java-url-expander/
-(defn expand [u]
-  ;; using proxy may increase latency
-  (with-http-conn [conn u]
-    (doto conn
-      (.setInstanceFollowRedirects false)
-      (.connect))
-    (if-let [loc (.getHeaderField conn "Location")]
-      (let [url (.getURL conn)
-            host (let [port (.getPort url)]
-                   (if (= -1 port)
-                     (.getHost url)
-                     (format "%s:%d" (.getHost url) port)))
-            expanded (if (.startsWith loc "http")
-                       loc
-                       (ensure-proper-url loc
-                                          (.getProtocol url)
-                                          host))]
-        (recur expanded))
-      u)))
+(defn expand [u & {:keys [cookie redirects]
+                   :or {cookie ""
+                        redirects 10}}]
+  (if (= 0 redirects)
+    u
+    ;; using proxy may increase latency
+    (with-http-conn [conn u]
+      (doto conn
+        (.setInstanceFollowRedirects false)
+        (.setRequestProperty "Cookie" cookie)
+        (.connect))
+      (if-let [loc (.getHeaderField conn "Location")]
+        (let [url (.getURL conn)
+              host (let [port (.getPort url)]
+                     (if (= -1 port)
+                       (.getHost url)
+                       (format "%s:%d" (.getHost url) port)))
+              expanded (if (.startsWith loc "http")
+                         loc
+                         (ensure-proper-url loc
+                                            (.getProtocol url)
+                                            host))
+              set-cookie (.getHeaderField conn "Set-Cookie")]
+          (recur expanded {:cookie set-cookie
+                           :redirects (dec redirects)}))
+        u))))
 
 ;;http://stackoverflow.com/questions/742013/how-to-code-a-url-shortener
 

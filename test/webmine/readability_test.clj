@@ -49,7 +49,7 @@
      (:body (request :get url))))))
 
 (deftest best-dev-wordcount
-  (is (= 419
+  (is (= 421
          (body-words "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))
   (is (= 1106
          (body-words "http://www.huffingtonpost.com/arianna-huffington/post_1098_b_770178.html")))

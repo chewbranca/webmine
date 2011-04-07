@@ -6,7 +6,7 @@
                  [xerces/xercesImpl "2.9.1"]
                  [clj-sys/tagsoup "1.3-SNAPSHOT"]
                  [clj-serializer "0.1.1"]
-		 [html-parse "0.0.1-SNAPSHOT"]
+                 [html-parse "0.0.1-SNAPSHOT"]
                  [xalan "2.7.1"]
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
@@ -16,7 +16,7 @@
                  [clj-time "0.2.0-SNAPSHOT"]
                  [clj-sys/plumbing "0.1.4-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
-		     [robert/hooke "1.1.0"]
+                     [robert/hooke "1.1.0"]
                      [lein-clojars "0.5.0"]]
   :jvm-opts ["-server"  "-mx1800m" "-Djava.awt.headless=true" "-Dfile.encoding=UTF8"]
   :test-selectors {:default (fn [v] (not (:performance v)))
