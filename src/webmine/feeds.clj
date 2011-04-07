@@ -131,9 +131,8 @@
              dom
              readability-div
              pretty-dom
-             clean-text
-	     dom
-             html-str2)))
+             html-str2
+             replace-unicode-control)))
 
 (defn complete-entry [e]
   (-x> e with-text with-des with-image))
