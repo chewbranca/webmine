@@ -109,9 +109,9 @@ document.write(\"Hello World!\")
 ")
 
 (def html-without-garbage
-"<?xml version=\"1.0\" encoding=\"UTF-16\"?><html xmlns:html=\"http://www.w3.org/1999/xhtml\"><body>\n\n<p>foo</p>\n<p>bar</p>\n<p>baz</p>\n\n<img border=\"0\" src=\"http://feeds.feedburner.com/~ff/Techcrunch?d=qj6IDK7rITs\"/>\n\n\n\n\n\n\n\n</body></html>")
+"<html xmlns:html=\"http://www.w3.org/1999/xhtml\">\n<body>\n\n<p>foo</p>\n<p>bar</p>\n<p>baz</p>\n\n<img border=\"0\" src=\"http://feeds.feedburner.com/~ff/Techcrunch?d=qj6IDK7rITs\"/>\n</body>\n</html>")
 
-#_(deftest clean-and-keep-image
+(deftest clean-and-keep-image
   (is (= {:body html-with-garbage
 	  :text html-without-garbage}
 	 (with-text {:body html-with-garbage}))))
