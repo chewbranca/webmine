@@ -214,7 +214,7 @@
             :issued]))
    :author (xml-zip/xml1-> node :author :name xml-zip/text)
    :title (xml-zip/xml1-> node :title xml-zip/text)
-   :link (xml-zip/xml1-> node :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))
+   :link (xml-zip/xml1-> node :link (xml-zip/attr :href))
    :des (xml-zip/xml1-> node :summary xml-zip/text)
    :content (xml-zip/xml1-> node :content xml-zip/text)})
  
@@ -227,11 +227,11 @@
    :gen
    (xml-zip/xml1-> root :generator xml-zip/text)
    :lang
-   (xml-zip/xml1-> root :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :hreflang))
+   (xml-zip/xml1-> root :link (xml-zip/attr :hreflang))
    :img
    (xml-zip/xml1-> root  :image xml-zip/text)
    :link
-   (xml-zip/xml1-> root :link (xml-zip/attr= :rel "alternate") (xml-zip/attr :href))})
+   (xml-zip/xml1-> root :link (xml-zip/attr :href))})
 
 ;;TODO:  make this case work: view-source:http://cityroom.blogs.nytimes.com/feed/
 (defn- parse-atom [root]
