@@ -60,9 +60,42 @@
      (merge good-tc
 {:des "Computer power management software company, 1E has released a new version of its marquee product, NightWatchman. Like its predecessors, version 6.0, helps corporations manage their network of computers to optimize energy efficiency. It gives IT managers the ability to remotely power down computers and establish energy-saving settings (ie."}))
 
-(deftest with-text-test
-  (is (= {:text "<html xmlns:html=\"http://www.w3.org/1999/xhtml\">\n<body>Hey There!</body>\n</html>", :body "<html><script>ignore</script>Hey There!</html>"}
-        (with-text {:body "<html><script>ignore</script>Hey There!</html>"}))))
+
+(def html-with-garbage
+"
+<html>
+<body>
+
+<p>foo</p>
+<p>bar</p>
+<p>baz</p>
+
+<img src=\"http://feeds.feedburner.com/~ff/Techcrunch?d=qj6IDK7rITs\" border=\"0\"></img>
+
+<form name=\"input\" action=\"html_form_action.asp\" method=\"get\">
+Username: <input type=\"text\" name=\"user\" />
+<input type=\"submit\" value=\"Submit\" />
+</form>
+
+<script type=\"text/javascript\">
+document.write(\"Hello World!\")
+</script>
+
+<iframe src=\"html_intro.asp\" width=\"100%\" height=\"300\">
+  <p>Your browser does not support iframes.</p>
+</iframe>
+
+</body>
+</html>
+")
+
+(def html-without-garbage
+"<?xml version=\"1.0\" encoding=\"UTF-16\"?><html xmlns:html=\"http://www.w3.org/1999/xhtml\"><body>\n\n<p>foo</p>\n<p>bar</p>\n<p>baz</p>\n\n<img border=\"0\" src=\"http://feeds.feedburner.com/~ff/Techcrunch?d=qj6IDK7rITs\"/>\n\n\n\n\n\n\n\n</body></html>")
+
+#_(deftest clean-and-keep-image
+  (is (= {:body html-with-garbage
+	  :text html-without-garbage}
+	 (with-text {:body html-with-garbage}))))
 
 (deftest des-tests
   (is (= (:des bad-tc-fixed)
