@@ -266,8 +266,10 @@
          (RuntimeException. "Unknown feed format"))
         ;; Ensure date compacted
         (update-in [:date] compact-date-time)
-        (update-in [:entries] (fn [es] (map #(update-in % [:date] compact-date-time)
-                                            es)))
+        (update-in [:entries]
+		   (fn [es]
+		     (map #(update-in % [:date] compact-date-time)
+			  es)))
         ensure-title)))
 
 (defn- entries [url]
@@ -292,8 +294,11 @@
 (defn fetch-feed-meta [u]
   (-> u url parse-feed (dissoc :entries)))
 
+(defn assoc-title [{:keys [title entries] :as feed}]
+  (map #(assoc % :feed-title title) entries))
+
 (defn extract-entries [body]
-  (-> body parse-feed :entries))
+  (-> body parse-feed assoc-title))
 
 (defn feed? [item]
   (and item
