@@ -312,6 +312,8 @@ The lyrics are &lt;a href=&quot;http://www.cs.cmu.edu/~mleone/gdead/dead-lyrics/
 
 (deftest parse-entries-test
   (is (= 25 (count (extract-entries rolling-stone))))
+  (is (= (repeat 25 "RollingStone.com: Latest News ")
+	 (map :feed-title (extract-entries rolling-stone))))
   (is (= 9 (count (extract-entries the-oatmeal))))
   (is (= 6 (count (extract-entries rss-091))))
   (is (= 22 (count (extract-entries rss-092))))
