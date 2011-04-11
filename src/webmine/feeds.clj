@@ -150,21 +150,20 @@
     {:title
      (get-text :title)
      :link
-     (get-text :link)
+     (find-first
+      (map get-text [:link :Link :guid]))
      :content
      (apply max-key count
             (map get-text [:content :description :content:encoded]))
      :des
-     (first (filter identity
-		    (map get-text [:description :content :content:encoded])))
+     (find-first
+      (map get-text [:description :content :content:encoded]))
      :date
-     (first (for [k [:pubDate :date :updatedDate :dc:date]
-		  :let [s (get-text k)]
-		  :when s] s))
+     (find-first
+      (map get-text [:pubDate :date :updatedDate :dc:date]))
      :author
-     (first (filter identity
-                    (map #(get-text %)
-                         [:author :dc:creator])))}))
+     (find-first (map get-text
+		      [:author :dc:creator]))}))
 
 (defn- rss-feed-meta [root]
   (let [get-text (partial node-reader root)])
