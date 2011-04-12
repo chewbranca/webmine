@@ -1,4 +1,4 @@
-(defproject webmine "0.1.4-SNAPSHOT"
+(defproject webmine "0.1.5-SNAPSHOT"
   :description "Web data mining library.
                Provides support for mining websites and newsfeeds."
   :dependencies [[org.clojure/clojure "1.2.0"]

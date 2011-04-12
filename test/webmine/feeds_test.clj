@@ -1,6 +1,7 @@
 (ns webmine.feeds-test
   (:require [clj-time.core :as time])
   (:use clojure.test
+	html-parse.parser
         webmine.feeds
         webmine.urls))
 
@@ -112,18 +113,9 @@ document.write(\"Hello World!\")
 "<html xmlns:html=\"http://www.w3.org/1999/xhtml\">\n<body>\n\n<p>foo</p>\n<p>bar</p>\n<p>baz</p>\n\n<img border=\"0\" src=\"http://feeds.feedburner.com/~ff/Techcrunch?d=qj6IDK7rITs\"/>\n</body>\n</html>")
 
 (deftest clean-and-keep-image
-  (is (= {:body html-with-garbage
-	  :text html-without-garbage}
-	 (with-text {:body html-with-garbage}))))
-
-(deftest des-tests
-  (is (= (:des bad-tc-fixed)
-	 (:des (with-des bad-tc))))
-  (is (= (:des good-tc-fixed)
-	 (:des (with-des good-tc))))
-  (is (= "PayPal abruptly went down for over an hour Friday morning, stalling transactions for all its customers. The outage affected PayPal's API, so customers attempting to make or receive payments between 8-9:30am Pacific time this morning received an error message. Although the issue was filed as resolved as of 9:24am Pacific time Friday, PayPal's customer service Twitter page recently tweeted that it was addressing new issues, in response to a user whose credit cards were being declined." 
-	 (:des
-	  (with-des {:text "PayPal abruptly went down for over an hour Friday morning, stalling transactions for all its customers. The outage affected PayPal's API, so customers attempting to make or receive payments between 8-9:30am Pacific time this morning received an error message. Although the issue was filed as resolved as of 9:24am Pacific time Friday, PayPal's customer service Twitter page recently tweeted that it was addressing new issues, in response to a user whose credit cards were being declined. Because so many were affected, PayPal began live-blogging its progress. Despite today's disruption, PayPal has been experiencing a solid growth year. Last week, parent company eBay reported that PayPal's third quarter revenue was up 22 percent year-on-year, boosting the company's overall performance. The site added one million new customer accounts every month last quarter, for a total revenue of $817 million. On Tuesday, PayPal introduced several new initiatives at the PayPal X Innovate developer's conference in San Francisco: an e-payment app with Discovery, micropayments for virtual goods, and a mobile express checkout service."})))))
+  (is (= {:text html-without-garbage}
+	 (dissoc (with-text {:dom (dom html-with-garbage)})
+		 :dom))))
 
 (deftest date-parsing
   ;; Ensure that the datetime key strings are canonicalized to the
@@ -368,16 +360,6 @@ The lyrics are &lt;a href=&quot;http://www.cs.cmu.edu/~mleone/gdead/dead-lyrics/
          (:title (parse-feed rolling-stone-sans-title))))
   (is (= "The Oatmeal - Comics, Quizzes, & Stories"
          (:title (parse-feed the-oatmeal)))))
-
-(deftest sentences
-  (is (= "hello thomas. baz. bar."
-	 (first-k-sentences 3 "hello thomas. baz. bar. bang.")))
-  (is (=  "hello thomas."
-	  (first-k-sentences 1 "hello thomas. baz. bar. bang.")))
-  (is (= "hello thomas@gmail.com."
-	 (first-k-sentences 1 "hello thomas@gmail.com. baz. bar. bang." ))))
-
-
 
 ;; http://www.usatoday.com/news/nation/2011-01-31-students31_ST_N.htm
 ;; http://blog.kissmetrics.com/beginners-guide-to-landing-pages/

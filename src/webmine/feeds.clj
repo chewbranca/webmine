@@ -30,10 +30,6 @@
            [java.text
             SimpleDateFormat ParsePosition]))
 
-;;
-;; Date Stuff
-;;
-
 (def rfc822-rss-formats
      (map #(SimpleDateFormat. %)
 	  ["E, dd MMM yy HH:mm:ss Z"
@@ -63,79 +59,18 @@
 		       (catch java.lang.Exception _ nil))]
 	  :when d] (-> d time-coerce/to-string)))))
 
-;; 
-;; Sentence Parsing
-;;
-
-(defn to-char [s] (.charAt s 0))
-
-(defn period? [c] (= (to-char ".") c))
-
-(defn count-sentences [s]
-  (count (filter period? s)))
-
-;;TODO: AB against sentence text-only approach below
-(defn sentences-from-ptags
-  ([body k]
-     (sentences-from-ptags body k ""))
-  ([body k text]
-     (let [d (dom body)
-	   ps (elements d "p")
-	   t (str text (text-from-dom (first ps)))]
-       (if (or (>= (count-sentences t)
-		   k)
-	       (empty? (rest ps)))
-	 t
-	 (recur (rest ps) k t)))))
-
-(defn first-k-sentences
-  "returns the first k sentences from a string t."
-  [k t]
-  (let [sps (sent-spans t)
-	idx (if (< (count sps) k)
-	      (second (last sps))
-	      (second (nth sps (- k 1))))]
-    (when (> idx 0)
-      (.substring t 0 (- idx 1)))))
-
 (defn with-des
-  "assumes entry already has {:keys [text]}
-   fields present. returns entry with :des field"
-  [entry]
-  (let [min-sentences 3
-        d (:des entry)
-        c (:content entry)
-        t (:text entry)
-        des (->> (if (and d
-                          (>= (count-sentences (clean-text (dom d)))
-                              min-sentences))
-                   d t)
-                 dom
-                 clean-text
-                 (first-k-sentences min-sentences))]
-    (assoc entry :des des)))
+  [{:keys [des] :as entry}]
+  (if (not des) entry
+      (assoc entry :des (clean-text (dom des)))))
 
-(defn fetch-body
-  "Takes an entry.  assocs' in the body of the link."
-  [e]
-  (assoc e :body
-	 (:body (request :get (:link e)))))
-
-(defn with-image [e]
-  (imgs/with-best-img e :link :body))
-
-(defn with-text [e]
-  (assoc e :text
-         (-> e
-             :body
-             dom
+(defn with-text [{:keys [dom] :as entry}]
+  (assoc entry :text
+         (-> dom
              readability-div
              pretty-dom
              html-str2
              replace-unicode-control)))
-
-(defn complete-entry [e]
-  (-x> e with-text with-des with-image))
 
 (defn- root-> [source f]
   (when-let [root (-> source parse zip/xml-zip)]
