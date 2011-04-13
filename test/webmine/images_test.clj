@@ -1,6 +1,8 @@
 (ns webmine.images-test
  (:use clojure.test
        webmine.images
+       html-parse.parser
+       fetcher.client
        [clojure.contrib.profile :only [profile]]))
 
 (deftest extract-hw-test
@@ -56,3 +58,11 @@
 (deftest fall-back-to-nothing
  (is (= nil
 	(best-img "http://www.newyorker.com/humor/2011/01/24/110124sh_shouts_allen" {:min 1000}))))
+
+(deftest expand-relative-paths
+  (let [url "http://vator.tv/news/2011-04-11-what-you-need-to-know-04-11-11"
+	d (dom (:body (request :get url)))
+	_ (expand-relative-imgs url d)
+	srcs (filter #(.startsWith % "/")
+		     (map (comp :src attr-map) (elements d "img")))]
+    (is (= []  srcs))))

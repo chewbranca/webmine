@@ -24,6 +24,16 @@
 ;; (defn ints [xs]
 ;;   (map #(Integer/parseInt %) xs))
 
+(defn expand-relative-imgs [url d]
+  (let [host (host-url url)
+	expand (fn [e]
+		 (let [src (.getAttribute e "src")]
+		   (if (.startsWith src "/")
+		     (.setAttribute e "src" (str host src)))))]
+    (doseq [e (elements d "img")]
+      (expand e))
+    d))
+
 (defn hw? [h w]
   (and h w
        (not (= "" h))
