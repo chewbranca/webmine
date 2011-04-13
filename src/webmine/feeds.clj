@@ -64,11 +64,12 @@
   (if (not des) entry
       (assoc entry :des (clean-text (dom des)))))
 
-(defn with-text [{:keys [dom] :as entry}]
+(defn with-text [{:keys [dom resolved] :as entry}]
   (assoc entry :text
-         (-> dom
+         (->> dom
              readability-div
              pretty-dom
+	     (imgs/expand-relative-imgs resolved)
              html-str2
              replace-unicode-control)))
 
