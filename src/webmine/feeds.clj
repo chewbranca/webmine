@@ -190,7 +190,7 @@
                  (slurp url-or-source)
                  url-or-source)
         root (-> ^String source
-		 (.getBytes "UTF-8")
+		 (.getBytes)
 		 java.io.ByteArrayInputStream.
                  parse
                  zip/xml-zip)]

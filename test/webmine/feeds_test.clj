@@ -21,6 +21,14 @@
                "http://www.huffingtonpost.com/wires/full_index.rdf"])
          (set (host-rss-feeds (url "http://www.huffingtonpost.com"))))))
 
+(deftest feed-meta-test
+  (is
+   (=
+    (-> (fetcher.client/request :get "http://feeds.huffingtonpost.com/huffingtonpost/raw_feed")
+	:body
+	parse-feed
+	(dissoc :entries)))))
+
 (def test-body
   "<!DOCTYPE html>
 <html lang=\"en\">
