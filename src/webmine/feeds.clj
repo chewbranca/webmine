@@ -375,10 +375,9 @@ May not be a good idea for blogs that have many useful feeds, for example, for a
   "string (page body) -> url (blog homepage) -> outlinks"
   [s h]
   (seq (into #{}
-	     (work/filter-work
+	     (filter
 	      #(external? (url h) %)
-	      (url-seq s)
-	      20))))
+	      (url-seq s)))))
 
 ;;TODO: parallelize
 (defn blogroll [opml]

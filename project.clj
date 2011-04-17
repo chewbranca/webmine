@@ -12,7 +12,7 @@
                  [infer "1.0-SNAPSHOT"]
                  [fetcher "0.0.3-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
-                 [work "0.2.8-SNAPSHOT"]
+                 [work "1.0.0-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]
                  [clj-sys/plumbing "0.1.4-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]

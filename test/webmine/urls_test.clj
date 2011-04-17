@@ -49,8 +49,7 @@
                  (url "http://blog.revolution-computing.com")
                  (url "http://blog.revolution-computing.com")
                  (url "http://www.readwriteweb.com")
-                 (url "http://www.readwriteweb.com")
-                 (url "invalid-url")]))))))
+                 (url "http://www.readwriteweb.com")]))))))
 
 (deftest test-expand-relative-url
   (are [a r] (= a (expand-relative-url "http://foo.com/bar/baz" r))
