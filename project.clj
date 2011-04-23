@@ -10,7 +10,7 @@
                  [xalan "2.7.1"]
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
-                 [fetcher "0.0.3-SNAPSHOT"]
+                 [fetcher "0.0.5-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
                  [work "1.0.0-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]

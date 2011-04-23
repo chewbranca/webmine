@@ -2,7 +2,7 @@
  (:use clojure.test
        webmine.images
        html-parse.parser
-       fetcher.client
+       fetcher.core
        [clojure.contrib.profile :only [profile]]))
 
 (deftest extract-hw-test
@@ -61,7 +61,7 @@
 
 (deftest expand-relative-paths
   (let [url "http://vator.tv/news/2011-04-11-what-you-need-to-know-04-11-11"
-	d (dom (:body (request :get url)))
+	d (dom (:body (fetch :get url)))
 	_ (expand-relative-imgs url d)
 	srcs (filter #(.startsWith % "/")
 		     (map (comp :src attr-map) (elements d "img")))]

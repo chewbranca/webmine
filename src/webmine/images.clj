@@ -4,7 +4,7 @@
         webmine.readability
         html-parse.parser
 	[clojure.contrib.profile :only [prof]]
-	[fetcher.client :only [request]]
+	[fetcher.core :only [fetch]]
 	plumbing.error
 	plumbing.core)
   (:require [work.core :as work])
@@ -120,7 +120,7 @@
      :height (.getHeight i)}))
 
 (defn img-content-size [^String u]
-  (or (-?> (request :head (.replaceAll u " " "%20"))
+  (or (-?> (fetch :head (.replaceAll u " " "%20"))
 	   :headers
 	   (get "content-length")
 	   Integer/parseInt)
@@ -163,10 +163,10 @@
 ;; TODO: better way of dealing with min size.  should really be composed more like classifiers, but let's leave it flat and lame until we figure out more about what we really need to do.
 
 (defn core-imgs [u] 
-  (imgs (readability-div (dom (:body (request :get u))))))
+  (imgs (readability-div (dom (:body (fetch :get u))))))
 
 (defn all-imgs [u] 
-  (imgs (dom (:body (request :get u)))))
+  (imgs (dom (:body (fetch :get u)))))
 
 (defn best-img
   ([u] (best-img u nil))

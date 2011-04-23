@@ -2,7 +2,7 @@
   (:use clojure.test
 	webmine.readability
 	html-parse.parser
-	[fetcher.client :only [request]]))
+	[fetcher.core :only [fetch]]))
 
 (deftest format-plain-text-content-test
   (is (= (-> "Hi.<p>New paragraph" dom format-plain-text-content)
@@ -40,13 +40,13 @@
 		 (clean-text
 		  (readability-div
 		   (dom
-		    (:body (request :get url))))))))
+		    (:body (fetch :get url))))))))
 
 (defn get-body [url]
   (clean-text
    (readability-div
     (dom
-     (:body (request :get url))))))
+     (:body (fetch :get url))))))
 
 (deftest best-dev-wordcount
   (is (= 419

@@ -24,7 +24,7 @@
 (deftest feed-meta-test
   (is
    (=
-    (-> (fetcher.client/request :get "http://feeds.huffingtonpost.com/huffingtonpost/raw_feed")
+    (-> (fetcher.core/fetch :get "http://feeds.huffingtonpost.com/huffingtonpost/raw_feed")
 	:body
 	parse-feed
 	(dissoc :entries)))))
