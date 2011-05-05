@@ -296,14 +296,14 @@
        (or (good-feed-name? link)
 	   (good-feed-name? type))))))
 
-(defn fix-link
+(defn make-absolute
   "fix absolute links"
   [base #^String link]
   (when link
     (let [l (.trim link)]
-      (if (.startsWith link "/")
-	(str base link)
-	link))))
+      (if (.startsWith l "/")
+	(str base l)
+	l))))
 
 ;;TODO: factor out duplciaiton between good-feed-elements and good-feed-links
 (defn good-feed-elements
@@ -317,7 +317,7 @@
 			    #^String link
 			    (->> attr
 				 :href
-				 (fix-link
+				 (make-absolute
 				  (host-url (str page-url))))]
 		      :when (good-rss? link type)]
 		  link))))
@@ -329,7 +329,7 @@
 		(for [l all-links
 		      :when l
 		      :let [#^String link
-			    (fix-link
+			    (make-absolute
 			     (host-url (str page-url)) l)]
 		      :when (good-rss? link)]
 		  link))))

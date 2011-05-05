@@ -29,6 +29,12 @@
 	parse-feed
 	(dissoc :entries)))))
 
+(deftest fix-link-test
+  (is (= "http://foo.com/bar"
+	 (make-absolute "http://foo.com" "/bar")))
+  (is (= "http://foo.com/bar"
+       (make-absolute "http://foo.com" " /bar"))))
+
 (def test-body
   "<!DOCTYPE html>
 <html lang=\"en\">
