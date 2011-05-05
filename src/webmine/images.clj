@@ -105,7 +105,7 @@
 ;;example usage
 ;;(big-img (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))))
 
-(defn read-img [u]
+(defn read-img [^java.net.URL u]
   (try (ImageIO/read u)
        (catch java.lang.Exception _ nil)))
 

@@ -6,7 +6,6 @@
         html-parse.parser
         webmine.urls
         webmine.core
-        mochi.nlp.process.sent-splitter
         plumbing.core
         plumbing.error
         [clojure.java.io :only [input-stream]]
