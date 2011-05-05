@@ -1,7 +1,7 @@
 (ns webmine.urls-test
   (:use clojure.test
         webmine.urls
-        [plumbing.core :only [with-timeout]])
+)
   (:import (java.net URL MalformedURLException)))
 
 (deftest test-url
@@ -77,7 +77,7 @@
 
 (deftest redirect-cookie-test
   (is (= "http://yfrog.com/h4e2xjj"
-         ((with-timeout 10 #(expand "http://yfrog.com/h4e2xjj"))))))
+         (expand "http://yfrog.com/h4e2xjj"))))
 
 (deftest ensure-proper-url-test
   (is (= "http://host.com/path"

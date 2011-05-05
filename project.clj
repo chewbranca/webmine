@@ -11,17 +11,11 @@
                  [rome "0.9"]
                  [infer "1.0-SNAPSHOT"]
                  [fetcher "0.0.5-SNAPSHOT"]
-                 [nlputil-clj "1.0-SNAPSHOT"]
-                 [work "1.0.0-SNAPSHOT"]
+                 [work "1.1.2-SNAPSHOT"]
                  [clj-time "0.2.0-SNAPSHOT"]
-                 [clj-sys/plumbing "0.1.4-SNAPSHOT"]]
-  :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]
-                     [robert/hooke "1.1.0"]
-                     [lein-clojars "0.5.0"]]
+                 [clj-sys/plumbing "0.1.5-SNAPSHOT"]]
+  :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]]
   :jvm-opts ["-server"  "-mx1800m" "-Djava.awt.headless=true" "-Dfile.encoding=UTF8"]
-  :test-selectors {:default (fn [v] (not (:performance v)))
-                   :performance :performance
-                   :all (constantly true)}
 
   :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"
                   "snapshots" "http://mvn.getwoven.com/repos/woven-public-snapshots"
