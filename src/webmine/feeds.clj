@@ -1,14 +1,13 @@
 (ns webmine.feeds
   (:use [clojure.xml :only [parse]]
         clojure.set
-        clojure.contrib.java-utils
         webmine.readability
         html-parse.parser
         webmine.urls
         webmine.core
         plumbing.core
         plumbing.error
-        [clojure.java.io :only [input-stream]]
+        [clojure.java.io :only [input-stream file]]
 	[fetcher.core :only [fetch]])
   (:require [work.core :as work]
             [clojure.zip :as zip]
@@ -296,14 +295,31 @@
        (or (good-feed-name? link)
 	   (good-feed-name? type))))))
 
+(defn drop-front [n s]
+  (.substring s n (.length s)))
+
+(defn drop-back [n s]
+  (.substring s 0 (- (.length s) n)))
+
+(defn to-url [base ^String rel]
+  (let [r (if (.startsWith rel "/")
+	    (drop-front 1 rel)
+	    rel)
+	bs (str base)
+	b (if (.endsWith bs "/")
+	    (drop-back 1 bs)
+	    bs)]
+    (str b "/" r)))
+
 (defn make-absolute
   "fix absolute links"
   [base #^String link]
   (let [l (.trim link)]
     (cond
-     (.startsWith l "/") (str base l)
+     (.startsWith l "http") l
+     (.startsWith l "www") l
      (.startsWith l "feed://") (.replace l "feed://" "http://")
-     :else l)))
+     :else (to-url base l))))
 
 (defn good-links
   [extract page-url all-links]
