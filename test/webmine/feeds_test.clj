@@ -33,7 +33,9 @@
   (is (= "http://foo.com/bar"
 	 (make-absolute "http://foo.com" "/bar")))
   (is (= "http://foo.com/bar"
-       (make-absolute "http://foo.com" " /bar"))))
+	 (make-absolute "http://foo.com" " /bar")))
+  (is (= "http://www.huhmagazine.co.uk/blog/rss/feed.php"
+       (make-absolute "http://www.huhmagazine.co.uk" "feed://www.huhmagazine.co.uk/blog/rss/feed.php"))))
 
 (def test-body
   "<!DOCTYPE html>

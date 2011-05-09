@@ -271,6 +271,7 @@
 
 (defn- bad-ext? [link]
   (or  (.contains link "comments")
+       (.contains link "comment")
        (.endsWith link "xmlrpc.php")
        (.endsWith link "osd.xml")
        (.endsWith link "/opensearch.xml")))
@@ -298,45 +299,33 @@
 (defn make-absolute
   "fix absolute links"
   [base #^String link]
-  (when link
-    (let [l (.trim link)]
-      (if (.startsWith l "/")
-	(str base l)
-	l))))
+  (let [l (.trim link)]
+    (cond
+     (.startsWith l "/") (str base l)
+     (.startsWith l "feed://") (.replace l "feed://" "http://")
+     :else l)))
 
-;;TODO: factor out duplciaiton between good-feed-elements and good-feed-links
-(defn good-feed-elements
-  [page-url all-links]
+(defn good-links
+  [extract page-url all-links]
   (into #{}
-	(remove nil? 
-		(for [l all-links
-		      :when l
-		      :let [attr (attr-map l)
-			    #^String type (:type attr)
-			    #^String link
-			    (->> attr
-				 :href
-				 (make-absolute
-				  (host-url (str page-url))))]
-		      :when (good-rss? link type)]
-		  link))))
+	(for [l all-links
+	      :when l
+	      :let [[^String lk ^String type] (extract l)
+		    link (make-absolute
+			  (host-url (str page-url)) lk)]
+	      :when (and link (good-rss? link type))]
+	  link)))
 
-(defn good-feed-links
-  [page-url all-links]
-  (into #{}
-	(remove nil? 
-		(for [l all-links
-		      :when l
-		      :let [#^String link
-			    (make-absolute
-			     (host-url (str page-url)) l)]
-		      :when (good-rss? link)]
-		  link))))
+(def good-feed-elements
+     (partial good-links
+	      (fn [l]
+		(let [attr (attr-map l)]
+		  [(:href attr) (:type attr)]))))
+
+(def good-feed-links
+     (partial good-links (fn [l] [l nil])))
 
 (defn host-rss-feeds
-  "checks head of page for rss feed links. Does two checks, any links
-   that are marked as rss/xml/atom in the link type or if
-   any link has rss xml or  "
   [page-url & [body]]
   ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
   (let [body (or body (:body (fetch :get (str page-url))))
@@ -357,10 +346,7 @@
 	u))
     u))
 
-(defn ^{:doc "Avoid subscribing to multiple feeds on the same blog.
-Initial heuristic is to take url with min length.
-May not be a good idea for blogs that have many useful feeds, for example, for a news site like NYT."}
-     canonical-feed [& args]
+(defn canonical-feed [& args]
      (let [fds (apply host-rss-feeds args)]
        (-> fds
            min-length
