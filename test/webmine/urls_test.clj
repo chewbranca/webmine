@@ -1,7 +1,6 @@
 (ns webmine.urls-test
   (:use clojure.test
-        webmine.urls
-)
+        webmine.urls)
   (:import (java.net URL MalformedURLException)))
 
 (deftest test-url
@@ -13,22 +12,12 @@
   (is (= "google.com") (host (url "http://google.com/foo")))
   (is (= "google.com") (host (url "http://Google.com/foo"))))
 
-(deftest test-path
-  (are [p u] (= p (path (url u)))
-    ""     "http://gooogle.com"
-    "/"    "http://google.com/"
-    "/foo" "http://google.com/foo"))
-
 (deftest test-host-by-ip
   (is (host-by-ip (url "http://google.com"))))
 
 (deftest test-http?
   (is (http? (url "http://google.com")))
   (is (not (http? (url "https://google.com")))))
-
-(deftest test-urls
-  (is (= [(url "http://google.com") (url "http://yahoo.com")]
-         (urls ["foobar" "http://google.com" "bizbat" "http://yahoo.com"]))))
 
 (deftest test-url-seq
   (is (= [(url "http://google.com") (url "http://yahoo.com")]

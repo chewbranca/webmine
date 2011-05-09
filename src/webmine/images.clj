@@ -1,6 +1,5 @@
 (ns webmine.images
-  (:use [infer.core :only [max-by]]
-        webmine.urls
+  (:use webmine.urls
         webmine.readability
         html-parse.parser
 	[fetcher.core :only [fetch]]
@@ -127,8 +126,3 @@ returns the scaled image, retaining aspect ratio."
   (let [kernel (ConvolveOp. (Kernel. 3, 3,
 			(float-array [-1, -1, -1, -1, 9, -1, -1, -1, -1])))]
     (.filter kernel image nil)))
-
-(comment
-  (best-img-at "http://channel9.msdn.com/posts/DC2010T0100-Keynote-Rx-curing-your-asynchronous-programming-blues")
-
-)

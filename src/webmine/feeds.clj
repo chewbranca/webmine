@@ -4,7 +4,6 @@
         webmine.readability
         html-parse.parser
         webmine.urls
-        webmine.core
         plumbing.core
         plumbing.error
         [clojure.java.io :only [input-stream file]]
@@ -56,20 +55,6 @@
 	  :let [d (try (time-fmt/parse fmt s)
 		       (catch java.lang.Exception _ nil))]
 	  :when d] (-> d time-coerce/to-string)))))
-
-(defn with-des
-  [{:keys [des] :as entry}]
-  (if (not des) entry
-      (assoc entry :des (clean-text (dom des)))))
-
-(defn with-text [{:keys [dom resolved] :as entry}]
-  (assoc entry :text
-         (->> dom
-             readability-div
-             pretty-dom
-	     (imgs/expand-relative-imgs resolved)
-             html-str2
-             replace-unicode-control)))
 
 (defn- root-> [source f]
   (when-let [root (-> source parse zip/xml-zip)]
@@ -233,6 +218,20 @@
 (defn extract-entries [body]
   (-> body parse-feed assoc-title))
 
+(defn with-des
+  [{:keys [des] :as entry}]
+  (if (not des) entry
+      (assoc entry :des (clean-text (dom des)))))
+
+(defn with-text [{:keys [dom resolved] :as entry}]
+  (assoc entry :text
+         (->> dom
+             readability-div
+             pretty-dom
+	     (imgs/expand-relative-imgs resolved)
+             html-str2
+             replace-unicode-control)))
+
 (defn feed? [item]
   (and item
        (let [feed (parse-feed item)]
@@ -363,10 +362,9 @@
     u))
 
 (defn canonical-feed [& args]
-     (let [fds (apply host-rss-feeds args)]
-       (-> fds
-           min-length
-           attempt-rss2)))
+  (->> (apply host-rss-feeds args)
+       (min-by (comp count str))
+       attempt-rss2))
 
 ;;
 ;; Feed outlink crawling
@@ -425,15 +423,3 @@
 (defn merge-outlinks [outlinks-map]
   (into #{} (concat (second (:entries outlinks-map))
 		    (second (:homepage outlinks-map)))))
-
-(comment
-  (use 'webmine.readability)
-  (def es (fetch-entries "http://blog.fontdeck.com/rss"))
-  (first es)
-  (fetch-entries "http://www.rollingstone.com/siteServices/rss/allNews")
-  (compact-date-time "Sun, 31 Oct 2010 03:03:00 EDT")
-  (fetch-entries (java.net.URL. "http://www.rollingstone.com/siteServices/rss/allNews"))
-  (fetch-entries "http://scripting.com/rss.xml")
-  (fetch-entries "http://feeds.nytimes.com/nyt/rss/HomePage")
-  (fetch-entries "http://feeds.feedburner.com/oreilly/news")
-  (fetch-entries "http://feeds.feedburner.com/oreilly/news"))
