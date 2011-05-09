@@ -7,7 +7,7 @@
     and one that doesn't. "
     :author "Aria Haghighi <me@aria42.com>"}
   (:use [infer.measures :only [sparse-dot-product]]
-	[infer.core :only [max-by min-by]]
+	[plumbing.core :only [max-by min-by]]
         [clojure.contrib.def :only [defvar-]])
   (:require [clojure.string :as clj-str]
             [html-parse.parser :as parser])

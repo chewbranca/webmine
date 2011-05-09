@@ -9,7 +9,7 @@
                  [html-parse "0.0.1-SNAPSHOT"]
                  [xalan "2.7.1"]
                  [rome "0.9"]
-                 [infer "1.0-SNAPSHOT"]
+                 [infer "1.0.1-SNAPSHOT"]
                  [fetcher "0.0.5-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
                  [work "1.1.2-SNAPSHOT"]
@@ -18,6 +18,4 @@
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]]
   :jvm-opts ["-server"  "-mx1800m" "-Djava.awt.headless=true" "-Dfile.encoding=UTF8"]
 
-  :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"
-                  "snapshots" "http://mvn.getwoven.com/repos/woven-public-snapshots"
-                  "releases" "http://mvn.getwoven.com/repos/woven-public-releases"})
+  :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"})
