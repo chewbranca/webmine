@@ -3,7 +3,6 @@
         webmine.urls
         webmine.readability
         html-parse.parser
-	[clojure.contrib.profile :only [prof]]
 	[fetcher.core :only [fetch]]
 	plumbing.error
 	plumbing.core)
@@ -15,15 +14,6 @@
   (:import java.awt.image.Kernel)
   (:import java.awt.RenderingHints))
 
-
-;;http://www.mkyong.com/regular-expressions/10-java-regular-expression-examples-you-should-know/
-;; (defn imgs [t]
-;;   (re-seq #"([^\\s]+(\\.(?i)(jpg|png|gif|bmp))$)" t))
-;;"([^\s]+(\.(?i)(jpg|png|gif|bmp))$)" t))
-
-;; (defn ints [xs]
-;;   (map #(Integer/parseInt %) xs))
-
 (defn expand-relative-imgs [url d]
   (let [host (host-url url)
 	expand (fn [e]
@@ -34,17 +24,14 @@
       (expand e))
     d))
 
-(defn hw? [h w]
-  (and h w
-       (not (= "" h))
-       (not (= "" w))))
-
 (defn extract-dim [^String d]
   (Integer/parseInt
    (.replaceAll d "[^0-9]" "")))
 
 (defn to-hw [h w] 
-  (if (hw? h w)
+  (if (and h w
+       (not (= "" h))
+       (not (= "" w)))
     {:width (extract-dim w)
      :height (extract-dim h)}
     nil))
@@ -59,149 +46,22 @@
       (let [[a b] (re-seq #"[0-9]+" s)]
 	(if (< hi wi) (to-hw a b) (to-hw b a))))))
 
-(defn hw-from-style
-  "in case hight and width are burried inside inline style tag."
-  [^Attr st]
-  (hw-from-str (.getValue st)))
-
-(defn hw-from-tags [^Attr h ^Attr w]
-  (to-hw (.getValue h)
-	 (.getValue w)))
-
-(defn img? [^String u]
-  (or (.contains u ".jpg")
-      (.contains u ".png")
-      (.contains u ".gif")
-      (.contains u ".bmp")))
-
-(defn img-urls [us] (filter img? us))
-
 ;;http://www.w3schools.com/tags/tag_IMG.asp
 (defn size [^Node n]
   (if-let [attrs (.getAttributes n)]
     (let [w (.getNamedItem attrs "width")
 	  h (.getNamedItem attrs "height")
-	  st (.getNamedItem attrs "style")]
+	  ^Attr st (.getNamedItem attrs "style")]
       (cond
-       (and w h) (hw-from-tags h w)
-       st (hw-from-style st)
+       (and w h) (to-hw (.getValue h)
+			(.getValue w))
+       st (hw-from-str (.getValue st))
        :else nil))))
 
-(defn imgs [d] (map (fn [n]
-		      {:url (src n)
-		       :size (size n)})
-		    (elements d "img")))
-
-(defn img-area [i]
-  (let [s (:size i)]
-  (* (:width s) (:height s))))
-
-(defn big-img
-[images]
-  ;;discard images with no size information.
-  (let [is (filter :size images)]
-	(max-by img-area is)))
-
-;;example usage
-;;(big-img (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/")))))
-
-(defn read-img [^java.net.URL u]
-  (try (ImageIO/read u)
-       (catch java.lang.Exception _ nil)))
-
-(defn ^BufferedImage
-  fetch-img [u]
-  (if-let [ur (url u)]
-    (read-img ur)))
-
 (defn img-size [u]
-  (when-let [i (prof :fetch-img (fetch-img u))]
+  (when-let [^BufferedImage i (ImageIO/read (url u))]
     {:width (.getWidth i)
      :height (.getHeight i)}))
-
-(defn img-content-size [^String u]
-  (or (-?> (fetch :head (.replaceAll u " " "%20"))
-	   :headers
-	   (get "content-length")
-	   Integer/parseInt)
-      0))
-
-(defn fetch-sizes [imgs]
-  (map 
-   (fn [i]
-     (if-let [s (:size i)]
-       i
-       (let [s (img-size (:url i))]
-	 (assoc i :size s))))     
-   imgs))
-
-(defn fetch-content-sizes [imgs]
-  (work/map-work
-   (fn [i]     
-     (if  (:content-size i) 
-       i
-       (assoc i :content-size (img-content-size (:url i)))))
-   (min (count imgs) 100)
-   imgs))
-
-;;example usage
-;;(big-img (fetch-sizes (imgs (dom (:body (cl/get "http://gigaom.com/2010/10/22/whos-driving-mobile-payments-hint-some-are-barely-old-enough-to-drive/"))))))
-
-(defn extract-all [d]
-  (flatten
-   (map
-    #(flatten (map (fn [t] (do-children t identity))
-		   (do-children % identity)))
-    (divs d))))
-
-(defn big-div [d]
-  (max-by (comp count :textContent bean) (extract-all d)))
-
-(defn at-least [min imgs]
-  (filter #(> (img-area %) min) imgs))
-
-;; TODO: better way of dealing with min size.  should really be composed more like classifiers, but let's leave it flat and lame until we figure out more about what we really need to do.
-
-(defn core-imgs [u] 
-  (imgs (readability-div (dom (:body (fetch :get u))))))
-
-(defn all-imgs [u] 
-  (imgs (dom (:body (fetch :get u)))))
-
-(defn best-img
-  ([u] (best-img u nil))
-  ([u opts] (best-img u (slurp u) opts))
-  ([u content {:keys [min, height-backoff] :or {min 0 height-backoff 0}}]
-     (let [d (dom content)	   
-	   core-imgs (loop [n (readability-div d) count 0]
-		       (let [node-imgs (imgs n)]
-			 (if (or (>= count height-backoff)
-				 (not (empty? node-imgs)))
-			   node-imgs
-			   (recur (.getParentNode n) (inc count)))))]
-       (when-not (empty? core-imgs)
-	 (let [eis (expand-relative-urls u core-imgs)
-	       ;;ensure we have sizes for all images.
-	       sized (fetch-content-sizes eis)
-	       sizes (if min (filter (fn [i] (>= (:content-size i) min)) sized) sized)]
-	   (when-not (empty? sizes) 
-	     ;;take the first image we find that has no follow image that is larger than twice it's size.
-	     (when-let [best (reduce (fn [best next]
-				       (if (> (:content-size next)
-					      (* (:content-size best) 2))
-					 next
-					 best))
-				     sizes)]
-	       (assoc best
-		 :size (img-size (:url best))))))))))
-
-(defn with-best-img [m url-key content-key & {:as opts}]
-  (let [img (try
-	      (best-img (url-key m)
-			(content-key m)
-			opts)
-	      (catch java.lang.Exception _ nil))]
-  (assoc m :img img)))
 
 ;;RESIZING & CROPPING
 ;;http://www.componenthouse.com/article-20
