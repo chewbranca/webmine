@@ -7,14 +7,12 @@
                  [html-parse "0.0.1-SNAPSHOT"]
                  [xalan "2.7.1"]
                  [rome "0.9"]
-                 [infer "1.0-SNAPSHOT"]
+                 [infer "1.0.1-SNAPSHOT"]
                  [fetcher "0.0.5-SNAPSHOT"]
                  [nlputil-clj "1.0-SNAPSHOT"]
                  [work "1.1.2-SNAPSHOT"]
-                 [clj-time "0.2.0-SNAPSHOT"]
+                 [clj-time "0.4.0-SNAPSHOT"]
                  [clj-sys/plumbing "0.1.5-SNAPSHOT"]]
   :dev-dependencies [[swank-clojure "1.3.0-SNAPSHOT"]]
   :jvm-opts ["-server"  "-mx1800m" "-Djava.awt.headless=true" "-Dfile.encoding=UTF8"]
-
   :repositories  {"apache" "https://repository.apache.org/content/repositories/releases/"})
-
