@@ -276,7 +276,8 @@
 
 (defn- good-feed-name? [n]
   (or (.contains n "rss")
-      (.contains n "atom")))
+      (.contains n "atom")
+      (.contains n "xml")))
 
 (defn good-rss?
   ([link] (good-rss? link nil))

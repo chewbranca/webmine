@@ -51,7 +51,7 @@
 (deftest multi-redirect
   (is (= "http://techcrunch.com/2010/01/05/techcrunch-giveaway-a-google-nexus-one-techcrunch/"
          (expand "http://bit.ly/4XzVxm")))
-  (is (= "http://io9.com/#!5616394/all-the-books-youll-be-lusting-for-this-fall-season"
+  (is (= "http://io9.com/5616394/all-the-books-youll-be-lusting-for-this-fall-season"
          (expand "http://bit.ly/9hkePJ")))
   (is (= "http://www.iaventures.com"
          (expand "http://www.iaventurepartners.com"))))

@@ -52,6 +52,36 @@
 <body></body>
 </html>")
 
+(def test-body-with-spaces
+  "<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+	<meta charset=\"UTF-8\" />
+	<title>Daring Fireball</title>
+	<link rel=\"stylesheet\" type=\"text/css\" media=\"screen\"  href=\"/css/fireball_screen.css?v1.45\" />
+	<link rel=\"stylesheet\" type=\"text/css\" media=\"screen\"  href=\"/css/ie_sucks.php\" />
+	<link rel=\"stylesheet\" type=\"text/css\" media=\"print\"   href=\"/css/fireball_print.css?v01\" />
+	<link rel=\"alternate\" type=\"application/atom+xml\" href=\"  /index.xml  \" />
+	<link rel=\"shortcut icon\" href=\"/favicon.ico\" />
+</head>
+<body></body>
+</html>")
+
+(def test-body-no-link-rel
+  "<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+	<meta charset=\"UTF-8\" />
+	<title>Daring Fireball</title>
+	<link rel=\"stylesheet\" type=\"text/css\" media=\"screen\"  href=\"/css/fireball_screen.css?v1.45\" />
+	<link rel=\"stylesheet\" type=\"text/css\" media=\"screen\"  href=\"/css/ie_sucks.php\" />
+	<link rel=\"stylesheet\" type=\"text/css\" media=\"print\"   href=\"/css/fireball_print.css?v01\" />
+	<a href= \"  http://daringfireball.net/index.xml   \" />
+	<link rel=\"shortcut icon\" href=\"/favicon.ico\" />
+</head>
+<body></body>
+</html>")
+
 (deftest canonical-rss-feed
   (is (= "http://feeds.huffingtonpost.com/FeaturedPosts"
 	 (canonical-feed (url "http://www.huffingtonpost.com"))))
@@ -80,8 +110,10 @@
          (canonical-feed "http://daringfireball.net")))
   (is (= "http://daringfireball.net/index.xml"
          (canonical-feed "http://daringfireball.net" test-body)))
-  (is (=  "http://feeds.feedburner.com/InsideTheTravelLab"
-	  (canonical-feed "http://www.insidethetravellab.com/")))
+  (is (= "http://daringfireball.net/index.xml"
+         (canonical-feed "http://daringfireball.net" test-body-with-spaces)))
+  (is (= "http://daringfireball.net/index.xml"
+         (canonical-feed "http://daringfireball.net" test-body-no-link-rel)))
   (is (= "http://blog.nola.com/blogs_impact/atom.xml"
        (canonical-feed "http://www.nola.com/blogs/"))))
 
@@ -380,8 +412,3 @@ The lyrics are &lt;a href=&quot;http://www.cs.cmu.edu/~mleone/gdead/dead-lyrics/
          (:title (parse-feed rolling-stone-sans-title))))
   (is (= "The Oatmeal - Comics, Quizzes, & Stories"
          (:title (parse-feed the-oatmeal)))))
-
-;; http://www.usatoday.com/news/nation/2011-01-31-students31_ST_N.htm
-;; http://blog.kissmetrics.com/beginners-guide-to-landing-pages/
-;; http://www.latimes.com/news/nationworld/world/la-fg-muslim-brotherhood-20110131,0,5283199.story
-
