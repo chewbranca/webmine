@@ -193,8 +193,10 @@
 (defn extract-content
   "return the readability text from raw-html string"
   [raw-html]
-  (parser/clean-text
-   (readability-div (parser/dom raw-html))))
+  (-> raw-html
+      parser/dom
+      readability-div
+      parser/clean-text))
 
 (defn format-plain-text-content
   "return plain text rendering of html dom element. should

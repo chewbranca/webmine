@@ -164,7 +164,7 @@
 	      :link
 	      url
 	      host
-	      strip-subdomain)]
+	      (.replaceAll "www." ""))]
       (assoc feed :title title))))
 
 (defn parse-feed [url-or-source]
@@ -357,7 +357,7 @@
   [u]
   (if (and u (.endsWith u "rss"))
     (let [rss2 (str u "2")]
-      (if (exists? rss2)
+      (if (= 200 (:status (fetch :head rss2)))
 	rss2
 	u))
     u))
