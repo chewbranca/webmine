@@ -16,11 +16,7 @@
             [clojure.contrib.zip-filter.xml :as xml-zip]
             [clj-time.format :as time-fmt]
             [clj-time.coerce :as time-coerce])  
-  (:import [com.sun.syndication.feed.synd
-            SyndFeedImpl SyndEntryImpl SyndContentImpl]
-           [org.joda.time.format DateTimeFormat]
-           [com.sun.syndication.io
-            SyndFeedInput SyndFeedOutput XmlReader]
+  (:import [org.joda.time.format DateTimeFormat]
            java.util.Date
            java.util.ArrayList
            java.io.InputStream
