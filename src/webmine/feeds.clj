@@ -236,33 +236,6 @@
 (defn links-from-entry [e]
   (-> e :content url-seq))
 
-(defn feed-home [source]
-  (if-let [synd-feed (parse-feed source)]
-    (:link synd-feed)))
-
-(defn external?
-  "is the url from the same host as the home url?"
-  [home other]
-  (and home other
-       (not (= (.getHost other)
-	       (.getHost home)))))
-
-(def internal? (complement external?))
-
-(defn external
-  "removes urls to the same host"
-  [home urls]
-  (filter #(external? (url home) %)
-	  urls))
-
-(defn external-feed? [home other]
-  (and (external? home other)
-       (feed? other)))
-
-(defn internal-feed? [home other]
-  (and (internal? home other)
-       (feed? other)))
-
 (defn- bad-ext? [link]
   (or  (.contains link "comments")
        (.contains link "comment")
@@ -337,16 +310,32 @@
 (def good-feed-links
      (partial good-links (fn [l] [l nil])))
 
+  ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
+(defn head-feed [d]
+  (let [head (first (elements d "head"))
+	links (elements head "link")]
+    (some (fn [e]
+	    (let [attrs (attr-map e)]
+	      (when (and (= "application/rss+xml"
+			    (:type attrs))
+			 (= "alternate"
+			    (:rel attrs)))
+		(:href attrs))))
+	  links)))
+
 (defn host-rss-feeds
   [page-url & [body]]
-  ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
   (let [body (or body (:body (fetch :get (str page-url))))
-	d (dom body)
-	element-feeds (good-feed-elements
-		       page-url (elements d "link"))]
-    (if (not (empty? element-feeds))
-      element-feeds
-      (good-feed-links page-url (map str (url-seq body))))))
+	d (dom body)]
+    (if-let [l (head-feed d)]
+      ;;returns the singleton best feed.  TODO: can retrun multiple good feeds when we convert to a learned algorithm.
+      [(make-absolute
+	 (host-url (str page-url)) l)]
+      (let [element-feeds (good-feed-elements
+			   page-url (elements d "link"))]
+	(if (not (empty? element-feeds))
+	  element-feeds
+	  (good-feed-links page-url (map str (url-seq body))))))))
 
 (defn attempt-rss2
   "attempt to get an rss2 feed if this is an rss feed"
