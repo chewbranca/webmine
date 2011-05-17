@@ -11,7 +11,7 @@
   (is (not (good-rss?
 	    "http://www.foo.com/xmlrpc.php" "application+rss")))
   (is (good-rss? "http://www.foo.com/feed.xml"  "application+rss"))
-  (is (not (good-rss? "http://www.foo.com/feed.html" ""))))
+  (is (good-rss? "http://www.foo.com/feed.html" "")))
 
 (deftest find-rss-feeds
   (is (= #{"http://feeds.huffingtonpost.com/huffingtonpost/raw_feed"}
@@ -83,12 +83,10 @@
 	 (canonical-feed (url "http://www.huffingtonpost.com"))))
   (is (= "http://feedproxy.google.com/TechCrunch"
 	 (canonical-feed "http://techcrunch.com/2010/11/20/no-palin-no-galin/")))
-  (is (= nil
+  (is (= "https://friendfeed.com" ;;incorrect label
 	 (canonical-feed "http://friendfeed.com/paul/6c012ca5/europe-web-of-debt")))
   (is (= "http://feeds.feedburner.com/ommalik"
 	 (canonical-feed "http://gigaom.com")))
-  (is (= nil
-	 (canonical-feed "http://friendfeed.com/paul/74dd00cc/is-anyone-energized-by-doing-email")))
   (is (= "http://www.npr.org/rss/rss.php?id=1009"
 	 (canonical-feed "http://www.npr.org/2010/11/19/131450204/discontent-swells-in-hosni-mubarak-s-egypt")))
   (is (= "http://www.nytimes.com/rss2"
@@ -110,7 +108,13 @@
   (is (= "http://blog.nola.com/blogs_impact/atom.xml"
 	 (canonical-feed "http://www.nola.com/blogs/")))
   (is (= "http://feeds.feedburner.com/305green"
-       (canonical-feed "http://305green.com/"))))
+	 (canonical-feed "http://305green.com/")))
+  (is (= "http://feeds.feedburner.com/abduzeedo"
+	 (canonical-feed "http://abduzeedo.com/impressive-work-mato-atom")))
+  (is (= "http://8tracks.com/mix_sets/3.rss"
+	 (canonical-feed "http://8tracks.com")))
+  (is (= "http://feeds.feedburner.com/abovethelaw/"
+	 (canonical-feed "http://abovethelaw.com"))))
 
 (deftest head-feed-test
   (is (= "http://feeds.feedburner.com/305green"

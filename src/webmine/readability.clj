@@ -114,10 +114,10 @@
    (let [dfv (div-feat-vec div)]
     (sparse-dot-product dfv content-weight-vec))) 
 
-(defn min-chars? [d n]
+(defn min-chars? [^Node d n]
 (>= (-> d .getTextContent count) n))
 
-(defn bad-style? [d]
+(defn bad-style? [^Node d]
   (let [^String style (-> d parser/attr-map :style)]
     (and style
 	 (re-matches #"display:\s*none;"

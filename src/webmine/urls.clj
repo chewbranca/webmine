@@ -35,8 +35,8 @@
 (def url-pattern
   #"([A-Za-z][A-Za-z0-9+.-]{1,120}:[A-Za-z0-9/](([A-Za-z0-9$_.+!*,;/?:@&~=-])|%[A-Fa-f0-9]{2}){1,333}(#([a-zA-Z0-9][a-zA-Z0-9$_.+!*,;/?:@&~=%-]{0,1000}))?)")
 
-(defn url-seq [t]
+(defn url-seq [^String t]
   (->>
    (re-seq url-pattern t)
-   (map (comp url #(.trim %) first))
+   (map (comp url #(.trim ^String %) first))
    (remove nil?)))

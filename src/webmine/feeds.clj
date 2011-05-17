@@ -38,7 +38,7 @@
 (defn compact-date-time
   "take date time string and parse using RSS/Atom
    formats and falling back on clj-time.formats if necessary"
-  [#^String s]
+  [^String s]
   (first
    (concat
     (for [#^SimpleDateFormat sdf rfc822-rss-formats
@@ -154,14 +154,14 @@
 (defn ensure-title [feed]
   (if (:title feed)
     feed
-    (let [title
+    (let [^String title
 	  (-> (:entries feed)
 	      first
 	      :link
 	      url
-	      host
-	      (.replaceAll "www." ""))]
-      (assoc feed :title title))))
+	      host)]
+      (assoc feed
+	:title (.replaceAll title "www." "")))))
 
 (defn parse-feed [url-or-source]
   (let [source (if (or (instance? java.net.URL url-or-source)
@@ -236,16 +236,19 @@
 (defn links-from-entry [e]
   (-> e :content url-seq))
 
-(defn- bad-ext? [link]
+(defn- bad-ext? [^String link]
   (or  (.contains link "comments")
        (.contains link "comment")
        (.endsWith link "xmlrpc.php")
        (.endsWith link "osd.xml")
+       (.endsWith link ".jpg")
+       (.endsWith link ".png")
        (.endsWith link "/opensearch.xml")))
 
-(defn- good-feed-name? [n]
+(defn- good-feed-name? [^String n]
   (or (.contains n "rss")
       (.contains n "atom")
+      (.contains n "feed")
       (.contains n "xml")))
 
 (defn good-rss?
@@ -264,10 +267,10 @@
        (or (good-feed-name? link)
 	   (good-feed-name? type))))))
 
-(defn drop-front [n s]
+(defn drop-front [^Integer n ^String s]
   (.substring s n (.length s)))
 
-(defn drop-back [n s]
+(defn drop-back [^Integer n ^String s]
   (.substring s 0 (- (.length s) n)))
 
 (defn to-url [base ^String rel]
@@ -310,36 +313,40 @@
 (def good-feed-links
      (partial good-links (fn [l] [l nil])))
 
-  ;;most sites go with the standard that the rss or atom feed is in the head, so we only check the header for now.
+(defn first-good-link [urls]
+  (some (fn [e]
+	  (let [attrs (attr-map e)]
+	    (when (and (or  (= "application/atom+xml"
+			       (:type attrs))
+			    (= "application/rss+xml"
+			       (:type attrs)))
+		       (= "alternate"
+			  (:rel attrs)))
+	      (:href attrs))))
+	urls))
+
+;;check standard head link location first
+
 (defn head-feed [d]
   (let [head (first (elements d "head"))
-	links (elements head "link")]
-    (some (fn [e]
-	    (let [attrs (attr-map e)]
-	      (when (and (= "application/rss+xml"
-			    (:type attrs))
-			 (= "alternate"
-			    (:rel attrs)))
-		(:href attrs))))
-	  links)))
+	links (elements head "link")
+	good (first-good-link links)]
+    (if good good
+	(first-good-link (elements d "link")))))
 
 (defn host-rss-feeds
   [page-url & [body]]
   (let [body (or body (:body (fetch :get (str page-url))))
 	d (dom body)]
     (if-let [l (head-feed d)]
-      ;;returns the singleton best feed.  TODO: can retrun multiple good feeds when we convert to a learned algorithm.
+      ;;returns the singleton best feed.  TODO: can return multiple feeds when we convert to a learned algorithm.
       [(make-absolute
 	 (host-url (str page-url)) l)]
-      (let [element-feeds (good-feed-elements
-			   page-url (elements d "link"))]
-	(if (not (empty? element-feeds))
-	  element-feeds
-	  (good-feed-links page-url (map str (url-seq body))))))))
+      (good-feed-links page-url (map str (url-seq body))))))
 
 (defn attempt-rss2
   "attempt to get an rss2 feed if this is an rss feed"
-  [u]
+  [^String u]
   (if (and u (.endsWith u "rss"))
     (let [rss2 (str u "2")]
       (if (= 200 (:status (fetch :head rss2)))

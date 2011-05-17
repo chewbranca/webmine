@@ -6,7 +6,7 @@
 	plumbing.error
 	plumbing.core)
   (:require [work.core :as work])
-  (:import [org.w3c.dom Node Attr])
+  (:import [org.w3c.dom Node Attr Element])
   (:import javax.imageio.ImageIO)
   (:import [java.awt.image BufferedImage])
   (:import java.awt.image.ConvolveOp)
@@ -15,8 +15,8 @@
 
 (defn expand-relative-imgs [url d]
   (let [host (host-url url)
-	expand (fn [e]
-		 (let [src (.getAttribute e "src")]
+	expand (fn [^Element e]
+		 (let [^String  src (.getAttribute e "src")]
 		   (if (.startsWith src "/")
 		     (.setAttribute e "src" (str host src)))))]
     (doseq [e (elements d "img")]
@@ -48,8 +48,8 @@
 ;;http://www.w3schools.com/tags/tag_IMG.asp
 (defn size [^Node n]
   (if-let [attrs (.getAttributes n)]
-    (let [w (.getNamedItem attrs "width")
-	  h (.getNamedItem attrs "height")
+    (let [^Attr w (.getNamedItem attrs "width")
+	  ^Attr h (.getNamedItem attrs "height")
 	  ^Attr st (.getNamedItem attrs "style")]
       (cond
        (and w h) (to-hw (.getValue h)
@@ -58,7 +58,7 @@
        :else nil))))
 
 (defn img-size [u]
-  (when-let [^BufferedImage i (ImageIO/read (url u))]
+  (when-let [^BufferedImage i (ImageIO/read ^java.net.URL (url u))]
     {:width (.getWidth i)
      :height (.getHeight i)}))
 
@@ -106,7 +106,7 @@ returns the scaled image, retaining aspect ratio."
   (resize i height width hint)))
 
 ;;TODO: get into a stream for the server API.
-(defn save-img [^BufferedImage image filename ext]
+(defn save-img [^BufferedImage image ^String filename ^String ext]
   (let [f (java.io.File. (str filename "." ext))]
     (try
      (ImageIO/write image ext f)
