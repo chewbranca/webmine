@@ -6,7 +6,7 @@
                  [xerces/xercesImpl "2.9.1"]
                  [html-parse "0.0.1-SNAPSHOT"]
                  [xalan "2.7.1"]
-                 [infer "1.0.1-SNAPSHOT"]
+                 [infer "1.0.2-SNAPSHOT"]
                  [fetcher "0.0.5-SNAPSHOT"]
                  [work "1.1.2-SNAPSHOT"]
                  [clj-time "0.4.0-SNAPSHOT"]
