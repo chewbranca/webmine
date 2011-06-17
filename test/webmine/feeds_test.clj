@@ -172,7 +172,8 @@ document.write(\"Hello World!\")
 "<html xmlns:html=\"http://www.w3.org/1999/xhtml\">\n<body>\n\n<p>foo</p>\n<p>bar</p>\n<p>baz</p>\n\n<img border=\"0\" src=\"http://feeds.feedburner.com/~ff/Techcrunch?d=qj6IDK7rITs\"/>\n</body>\n</html>")
 
 (deftest clean-and-keep-image
-  (is (= {:text html-without-garbage}
+  (is (= {:text "foo\nbar\nbaz"
+	  :html html-without-garbage}
 	 (dissoc (with-text {:dom (dom html-with-garbage)})
 		 :dom))))
 

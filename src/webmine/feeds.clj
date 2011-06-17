@@ -7,7 +7,8 @@
         plumbing.core
         plumbing.error
         [clojure.java.io :only [input-stream file]]
-	[fetcher.core :only [fetch]])
+	[fetcher.core :only [fetch]]
+	[clojure.string :only [trim]])
   (:require [work.core :as work]
             [clojure.zip :as zip]
             [webmine.images :as imgs]
@@ -219,14 +220,21 @@
   (if (not des) entry
       (assoc entry :des (clean-text (dom des)))))
 
-(defn with-text [{:keys [dom resolved] :as entry}]
-  (assoc entry :text
-         (->> dom
-             readability-div
-             pretty-dom
-	     (imgs/expand-relative-imgs resolved)
-             html-str2
-             replace-unicode-control)))
+(defn with-text [{:keys [dom resolved title] :as entry}]
+  (let [div (readability-div dom)
+	text (->> div
+		  text-from-dom
+		  replace-unicode-control
+		  trim)
+	html (->> div
+		  pretty-dom
+		  (imgs/expand-relative-imgs resolved)
+		  html-str2
+		  replace-unicode-control
+		  trim)]
+    (-> entry
+	(assoc :text text
+	       :html html))))
 
 (defn feed? [item]
   (and item
