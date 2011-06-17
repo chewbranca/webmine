@@ -127,13 +127,13 @@
   "For the given dom root, what is the best DIV. Returns
    best DIV unaltered.  Return root if there are no divs."
   [root]
-  (when-let [divs 
+  (let [divs 
 	     (filter (fn [^Node d]
 		       (and (not (bad-style? d))
 			    (min-chars? d 140)))
 		       (parser/divs root))]
-	     (if (= 0 (count divs)) root
-		 (apply max-key div-content-score divs))))
+    (if (empty? divs) root
+	(apply max-key div-content-score divs))))
 
 (defn div-stats
   [div]
