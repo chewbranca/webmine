@@ -1,11 +1,11 @@
 (ns webmine.images
   (:use webmine.urls
         webmine.readability
-        html-parse.parser
 	[fetcher.core :only [fetch]]
 	plumbing.error
 	plumbing.core)
-  (:require [work.core :as work])
+  (:require [work.core :as work]
+            [html-parse.parser :as parser])
   (:import [org.w3c.dom Node Attr Element])
   (:import javax.imageio.ImageIO)
   (:import [java.awt.image BufferedImage])
@@ -19,7 +19,7 @@
 		 (let [^String  src (.getAttribute e "src")]
 		   (if (.startsWith src "/")
 		     (.setAttribute e "src" (str host src)))))]
-    (doseq [e (elements d "img")]
+    (doseq [e (parser/elements d "img")]
       (expand e))
     d))
 

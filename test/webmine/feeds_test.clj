@@ -1,7 +1,9 @@
 (ns webmine.feeds-test
-  (:require [clj-time.core :as time])
+  (:require [clj-time.core :as time]
+            [html-parse.parser :as parser]
+
+            )
   (:use clojure.test
-	html-parse.parser
         webmine.feeds
         webmine.urls
 	[fetcher.core :only [fetch]]))
@@ -121,7 +123,7 @@
 	 (->> "http://305green.com/"
 	      (fetch :get)
 	      :body
-	      dom
+	      parser/dom
 	      head-feed))))
 
 (def good-tc
@@ -174,7 +176,7 @@ document.write(\"Hello World!\")
 (deftest clean-and-keep-image
   (is (= {:text "foo\nbar\nbaz"
 	  :html html-without-garbage}
-	 (dissoc (with-text {:dom (dom html-with-garbage)})
+	 (dissoc (with-text {:dom (parser/dom html-with-garbage)})
 		 :dom))))
 
 (deftest date-parsing

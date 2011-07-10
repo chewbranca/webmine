@@ -1,8 +1,8 @@
 (ns webmine.readability-test  
   (:use clojure.test
 	webmine.readability
-	html-parse.parser
-	[fetcher.core :only [fetch]]))
+	[html-parse.parser :only [dom clean-text]]
+        [fetcher.core :only [fetch]]))
 
 (deftest format-plain-text-content-test
   (is (= (-> "Hi.<p>New paragraph" dom format-plain-text-content)

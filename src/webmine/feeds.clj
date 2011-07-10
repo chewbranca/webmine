@@ -2,7 +2,6 @@
   (:use [clojure.xml :only [parse]]
         clojure.set
         webmine.readability
-        html-parse.parser
         webmine.urls
         plumbing.core
         plumbing.error
@@ -12,6 +11,7 @@
   (:require [work.core :as work]
             [clojure.zip :as zip]
             [webmine.images :as imgs]
+            [html-parse.parser :as parser]
             [clojure.contrib.logging :as log]
             [clojure.contrib.zip-filter :as zip-filter]
             [clojure.contrib.zip-filter.xml :as xml-zip]
@@ -218,19 +218,19 @@
 (defn with-des
   [{:keys [des] :as entry}]
   (if (not des) entry
-      (assoc entry :des (clean-text (dom des)))))
+      (assoc entry :des (parser/clean-text (parser/dom des)))))
 
 (defn with-text [{:keys [dom resolved title] :as entry}]
   (let [div (readability-div dom)
 	text (->> div
-		  text-from-dom
-		  replace-unicode-control
+		  parser/text-from-dom
+		  parser/replace-unicode-control
 		  trim)
 	html (->> div
-		  pretty-dom
+		  parser/pretty-dom
 		  (imgs/expand-relative-imgs resolved)
-		  html-str2
-		  replace-unicode-control
+		  parser/html-str2
+		  parser/replace-unicode-control
 		  trim)]
     (-> entry
 	(assoc :text text
@@ -315,7 +315,7 @@
 (def good-feed-elements
      (partial good-links
 	      (fn [l]
-		(let [attr (attr-map l)]
+		(let [attr (parser/attr-map l)]
 		  [(:href attr) (:type attr)]))))
 
 (def good-feed-links
@@ -323,7 +323,7 @@
 
 (defn first-good-link [urls]
   (some (fn [e]
-	  (let [attrs (attr-map e)]
+	  (let [attrs (parser/attr-map e)]
 	    (when (and (or  (= "application/atom+xml"
 			       (:type attrs))
 			    (= "application/rss+xml"
@@ -336,16 +336,16 @@
 ;;check standard head link location first
 
 (defn head-feed [d]
-  (let [head (first (elements d "head"))
-	links (elements head "link")
+  (let [head (first (parser/elements d "head"))
+	links (parser/elements head "link")
 	good (first-good-link links)]
     (if good good
-	(first-good-link (elements d "link")))))
+	(first-good-link (parser/elements d "link")))))
 
 (defn host-rss-feeds
   [page-url & [body]]
   (let [body (or body (:body (fetch :get (str page-url))))
-	d (dom body)]
+	d (parser/dom body)]
     (if-let [l (head-feed d)]
       ;;returns the singleton best feed.  TODO: can return multiple feeds when we convert to a learned algorithm.
       [(make-absolute
