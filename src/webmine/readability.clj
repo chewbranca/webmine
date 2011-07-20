@@ -36,7 +36,7 @@
   
 (defn- to-binary [x]
   (if x 1.0 0.0))   
-  
+
 (defn- has-match? [s m]
   (try
     (re-seq s m)
@@ -156,7 +156,7 @@
     (if (= 0 (count ds)) root
 	(let [best-div 
 	      (->> (cons root ds)
-		   (map div-stats)
+		  (map div-stats)
 		   (filter
 		    (fn [{:keys [p img li
 				 a embed txt

@@ -1,12 +1,9 @@
 (ns webmine.feeds-test
   (:require [clj-time.core :as time]
-            [html-parse.parser :as parser]
-
-            )
+            [html-parse.parser :as parser])
   (:use clojure.test
         webmine.feeds
-        webmine.urls
-	[fetcher.core :only [fetch]]))
+        [fetcher.core :only [fetch]]))
 
 (deftest is-link-an-rss-feed
   (is (not (good-rss? "http://www.foo.com" "")))
@@ -17,7 +14,7 @@
 
 (deftest find-rss-feeds
   (is (= #{"http://feeds.huffingtonpost.com/huffingtonpost/raw_feed"}
-         (set (host-rss-feeds (url "http://www.huffingtonpost.com"))))))
+         (set (host-rss-feeds (parser/url "http://www.huffingtonpost.com"))))))
 
 (deftest feed-meta-test
   (is
@@ -36,7 +33,7 @@
        (make-absolute "http://www.huhmagazine.co.uk" "feed://www.huhmagazine.co.uk/blog/rss/feed.php"))))
 
 (def test-body
-  "<!DOCTYPE html>
+"<!DOCTYPE html>
 <html lang=\"en\">
 <head>
 	<meta charset=\"UTF-8\" />
@@ -63,7 +60,7 @@
 	<link rel=\"shortcut icon\" href=\"/favicon.ico\" />
 </head>
 <body></body>
-</html>")
+s</html>")
 
 (def test-body-no-link-rel
   "<!DOCTYPE html>
@@ -82,7 +79,7 @@
 
 (deftest canonical-rss-feed
   (is (= "http://feeds.huffingtonpost.com/huffingtonpost/raw_feed"
-	 (canonical-feed (url "http://www.huffingtonpost.com"))))
+	 (canonical-feed (parser/url "http://www.huffingtonpost.com"))))
   (is (= "http://feedproxy.google.com/TechCrunch"
 	 (canonical-feed "http://techcrunch.com/2010/11/20/no-palin-no-galin/")))
   (is (= "https://friendfeed.com" ;;incorrect label
@@ -175,12 +172,14 @@ document.write(\"Hello World!\")
 
 (deftest clean-and-keep-image
   (is (= {:text "foo\nbar\nbaz"
-	  :html html-without-garbage}
-	 (dissoc (with-text {:dom (parser/dom html-with-garbage)})
+	  :html html-without-garbage
+	  :resolved "http://resolved.com"}
+	 (dissoc (with-text {:dom (parser/dom html-with-garbage)
+			     :resolved "http://resolved.com"})
 		 :dom))))
 
 (deftest date-parsing
-  ;; Ensure that the datetime key strings are canonicalized to the
+  ;; Ensure that the datetime key stringsare canonicalized to the
   ;; respective datetime value string.
 
   (let [datetimes {"2010-11-01T15:03:12.760Z" "2010-11-01T15:03:12.760Z",

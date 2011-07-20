@@ -1,5 +1,5 @@
 (ns webmine.images
-  (:use webmine.urls
+  (:use
         webmine.readability
 	[fetcher.core :only [fetch]]
 	plumbing.error
@@ -13,15 +13,7 @@
   (:import java.awt.image.Kernel)
   (:import java.awt.RenderingHints))
 
-(defn expand-relative-imgs [url d]
-  (let [host (host-url url)
-	expand (fn [^Element e]
-		 (let [^String  src (.getAttribute e "src")]
-		   (if (.startsWith src "/")
-		     (.setAttribute e "src" (str host src)))))]
-    (doseq [e (parser/elements d "img")]
-      (expand e))
-    d))
+
 
 (defn extract-dim [^String d]
   (Integer/parseInt
@@ -58,7 +50,7 @@
        :else nil))))
 
 (defn img-size [u]
-  (when-let [^BufferedImage i (ImageIO/read ^java.net.URL (url u))]
+  (when-let [^BufferedImage i (ImageIO/read ^java.net.URL (parser/url u))]
     {:width (.getWidth i)
      :height (.getHeight i)}))
 

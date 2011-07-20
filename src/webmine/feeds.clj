@@ -2,7 +2,6 @@
   (:use [clojure.xml :only [parse]]
         clojure.set
         webmine.readability
-        webmine.urls
         plumbing.core
         plumbing.error
         [clojure.java.io :only [input-stream file]]
@@ -159,8 +158,8 @@
 	  (-> (:entries feed)
 	      first
 	      :link
-	      url
-	      host)]
+	      parser/url
+	      parser/host)]
       (assoc feed
 	:title (.replaceAll title "www." "")))))
 
@@ -204,10 +203,10 @@
     (map (partial into {}) es)))
 
 (defn fetch-entries [u]
-  (-> u url entries))
+  (-> u parser/url entries))
 
 (defn fetch-feed-meta [u]
-  (-> u url parse-feed (dissoc :entries)))
+  (-> u parser/url parse-feed (dissoc :entries)))
 
 (defn assoc-title [{:keys [title entries] :as feed}]
   (map #(assoc % :feed-title title) entries))
@@ -228,7 +227,7 @@
 		  trim)
 	html (->> div
 		  parser/pretty-dom
-		  (imgs/expand-relative-imgs resolved)
+		  (parser/expand-relative-urls resolved)
 		  parser/html-str2
 		  parser/replace-unicode-control
 		  trim)]
@@ -242,7 +241,7 @@
 	 (-> feed :entries empty? not))))
 
 (defn links-from-entry [e]
-  (-> e :content url-seq))
+  (-> e :content parser/url-seq))
 
 (defn- bad-ext? [^String link]
   (or  (.contains link "comments")
@@ -308,7 +307,7 @@
 	      :when l
 	      :let [[^String lk ^String type] (extract l)
 		    link (make-absolute
-			  (host-url (str page-url)) lk)]
+			  (parser/host-url (str page-url)) lk)]
 	      :when (and link (good-rss? link type))]
 	  link)))
 
@@ -349,8 +348,8 @@
     (if-let [l (head-feed d)]
       ;;returns the singleton best feed.  TODO: can return multiple feeds when we convert to a learned algorithm.
       [(make-absolute
-	 (host-url (str page-url)) l)]
-      (good-feed-links page-url (map str (url-seq body))))))
+	 (parser/host-url (str page-url)) l)]
+      (good-feed-links page-url (map str (parser/url-seq body))))))
 
 (defn attempt-rss2
   "attempt to get an rss2 feed if this is an rss feed"
