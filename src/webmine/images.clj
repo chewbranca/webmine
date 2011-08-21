@@ -7,7 +7,8 @@
   (:require [work.core :as work]
             [html-parse.parser :as parser])
   (:import [org.w3c.dom Node Attr Element])
-  (:import javax.imageio.ImageIO)
+  (:import [javax.imageio ImageIO ImageReader]
+           [javax.imageio.stream MemoryCacheImageInputStream])
   (:import [java.awt.image BufferedImage])
   (:import java.awt.image.ConvolveOp)
   (:import java.awt.image.Kernel)
@@ -49,7 +50,21 @@
        st (hw-from-str (.getValue st))
        :else nil))))
 
+
+(defn- iter-first [^java.util.Iterator i]
+  (when (.hasNext i) (.next i)))
+
 (defn img-size [u]
+  (let [u ^java.net.URL (parser/url u)]
+    (with-open [s (.openStream u)
+                iis  (MemoryCacheImageInputStream. s)]
+      (when-let [^ImageReader r (-> iis ImageIO/getImageReaders iter-first)]
+        (.setInput r iis true)
+        (let [i  (.getMinIndex r)]
+          {:width (.getWidth r i)
+           :height (.getHeight r i)})))))
+
+(defn img-size-old [u]
   (when-let [^BufferedImage i (ImageIO/read ^java.net.URL (parser/url u))]
     {:width (.getWidth i)
      :height (.getHeight i)}))
