@@ -107,7 +107,7 @@
                                     (rss-item-node-to-entry n)))]]
       entry)))
 
-(defn- parse-rss [root]
+(defn parse-rss [root]
   "returns record Feed representing a snapshot of a feed. Supports keys
   :title Name of feed
   :des Description of feed
@@ -147,7 +147,7 @@
    (xml-zip/xml1-> root :link (xml-zip/attr :href))})
 
 ;;TODO:  make this case work: view-source:http://cityroom.blogs.nytimes.com/feed/
-(defn- parse-atom [root]
+(defn parse-atom [root]
   (assoc (atom-feed-meta root)
     :entries (map atom-item-node-to-entry (xml-zip/xml-> root :entry))))
 
